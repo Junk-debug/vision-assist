@@ -2,6 +2,7 @@ import { camera } from '@kit.CameraKit';
 import { image } from '@kit.ImageKit';
 import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { BACK_FRAME_ROTATION, FRONT_FRAME_ROTATION, FRONT_PREVIEW_MIRRORED } from '../common/Config';
 import { describeError, log } from '../common/Logger';
 
 const RECEIVER_CAPACITY: number = 4;
@@ -22,22 +23,76 @@ export class CameraSource {
   private minIntervalMs: number = 0;
   private active: boolean = false;
   private frameRequest?: (frame: image.PixelMap) => void;
+  private position: camera.CameraPosition = camera.CameraPosition.CAMERA_POSITION_BACK;
+  private positions: camera.CameraPosition[] = [];
+  private queue: Promise<boolean> = Promise.resolve(true);
 
   setFrameHandler(handler: FrameHandler | undefined, minIntervalMs: number): void {
     this.handler = handler;
     this.minIntervalMs = minIntervalMs;
   }
 
-  async start(context: common.UIAbilityContext, surfaceId: string): Promise<boolean> {
+  start(context: common.UIAbilityContext, surfaceId: string): Promise<boolean> {
+    return this.enqueue(() => this.open(context, surfaceId));
+  }
+
+  stop(): Promise<void> {
+    return this.enqueue(async () => {
+      await this.close();
+      return true;
+    }).then(() => undefined);
+  }
+
+  switchPosition(context: common.UIAbilityContext, surfaceId: string): Promise<boolean> {
+    return this.enqueue(async () => {
+      const previous = this.position;
+      await this.close();
+      this.position = this.isFront() ? camera.CameraPosition.CAMERA_POSITION_BACK :
+        camera.CameraPosition.CAMERA_POSITION_FRONT;
+      if (await this.open(context, surfaceId)) {
+        return true;
+      }
+      this.position = previous;
+      await this.open(context, surfaceId);
+      return false;
+    });
+  }
+
+  isFront(): boolean {
+    return this.position === camera.CameraPosition.CAMERA_POSITION_FRONT;
+  }
+
+  canSwitch(): boolean {
+    return this.positions.includes(camera.CameraPosition.CAMERA_POSITION_BACK) &&
+      this.positions.includes(camera.CameraPosition.CAMERA_POSITION_FRONT);
+  }
+
+  frameRotation(): number {
+    return this.isFront() ? FRONT_FRAME_ROTATION : BACK_FRAME_ROTATION;
+  }
+
+  previewMirrored(): boolean {
+    return this.isFront() && FRONT_PREVIEW_MIRRORED;
+  }
+
+  private enqueue(task: () => Promise<boolean>): Promise<boolean> {
+    const next = this.queue.then(() => task());
+    this.queue = next.catch(() => false);
+    return next;
+  }
+
+  private async open(context: common.UIAbilityContext, surfaceId: string): Promise<boolean> {
     if (this.session) {
       return true;
     }
     try {
       this.manager = camera.getCameraManager(context);
       const devices = this.manager.getSupportedCameras();
-      let device = devices.find((d: camera.CameraDevice) => d.cameraPosition === camera.CameraPosition.CAMERA_POSITION_BACK);
+      this.positions = devices.map((d: camera.CameraDevice) => d.cameraPosition);
+      let device = devices.find((d: camera.CameraDevice) => d.cameraPosition === this.position);
       if (!device) {
         device = devices[0];
+        this.position = device.cameraPosition;
       }
       const capability = this.manager.getSupportedOutputCapability(device, camera.SceneMode.NORMAL_PHOTO);
       const profile = capability.previewProfiles[0];
@@ -61,11 +116,11 @@ export class CameraSource {
       await this.session.commitConfig();
       await this.session.start();
       this.active = true;
-      log(`camera started, preview ${profile.size.width}x${profile.size.height}`);
+      log(`camera ${device.cameraId} started, position ${device.cameraPosition}, orientation ${device.cameraOrientation}, preview ${profile.size.width}x${profile.size.height}`);
       return true;
     } catch (error) {
       log(`camera start failed ${describeError(error)}`);
-      await this.stop();
+      await this.close();
       return false;
     }
   }
@@ -134,7 +189,7 @@ export class CameraSource {
     return this.active;
   }
 
-  async stop(): Promise<void> {
+  private async close(): Promise<void> {
     this.active = false;
     try {
       await this.session?.stop();

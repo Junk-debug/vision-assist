@@ -1,4 +1,6 @@
-export const FRAME_ROTATION: number = 90;
+export const BACK_FRAME_ROTATION: number = 90;
+export const FRONT_FRAME_ROTATION: number = 270;
+export const FRONT_PREVIEW_MIRRORED: boolean = true;
 export const DETECTION_THRESHOLD: number = 0.35;
 export const FIND_THRESHOLD: number = 0.25;
 export const LIVE_FRAME_INTERVAL_MS: number = 250;

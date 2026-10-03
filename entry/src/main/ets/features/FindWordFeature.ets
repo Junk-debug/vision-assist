@@ -2,7 +2,7 @@ import { image } from '@kit.ImageKit';
 import { Feature, FeatureServices } from './Feature';
 import { computeGuidance } from './FindGuidance';
 import { GuidanceCoach } from './GuidanceCoach';
-import { FRAME_ROTATION, WORD_FRAME_INTERVAL_MS, WORD_FULL_SIZE_SIDE, WORD_HOLD_MS } from '../common/Config';
+import { WORD_FRAME_INTERVAL_MS, WORD_FULL_SIZE_SIDE, WORD_HOLD_MS } from '../common/Config';
 import { describeError, log } from '../common/Logger';
 import { normalizeFrame } from '../vision/FrameNormalizer';
 import { findWord, WordMatch } from '../vision/text/WordMatcher';
@@ -53,7 +53,7 @@ export class FindWordFeature implements Feature {
     if (!this.running) {
       return;
     }
-    const content = await normalizeFrame(frame, FRAME_ROTATION);
+    const content = await normalizeFrame(frame, this.services.camera.frameRotation());
     const result = await this.services.textReader.read(frame);
     if (!this.running) {
       return;

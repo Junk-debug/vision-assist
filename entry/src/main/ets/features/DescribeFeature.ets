@@ -1,6 +1,6 @@
 import { image } from '@kit.ImageKit';
 import { Feature, FeatureServices } from './Feature';
-import { DETECTION_THRESHOLD, FRAME_ROTATION, LIVE_FRAME_INTERVAL_MS } from '../common/Config';
+import { DETECTION_THRESHOLD, LIVE_FRAME_INTERVAL_MS } from '../common/Config';
 import { normalizeFrame } from '../vision/FrameNormalizer';
 import { DetectionResult } from '../vision/DetectionTypes';
 import { SceneTracker } from '../vision/SceneTracker';
@@ -39,7 +39,7 @@ export class DescribeFeature implements Feature {
     if (!this.running) {
       return;
     }
-    const content = await normalizeFrame(frame, FRAME_ROTATION);
+    const content = await normalizeFrame(frame, this.services.camera.frameRotation());
     const result = await this.services.detector.detect(frame, DETECTION_THRESHOLD);
     if (!this.running) {
       return;

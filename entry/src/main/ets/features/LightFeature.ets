@@ -1,7 +1,6 @@
 import { image } from '@kit.ImageKit';
 import { sensor } from '@kit.SensorServiceKit';
 import { Feature, FeatureServices } from './Feature';
-import { FRAME_ROTATION } from '../common/Config';
 import { describeError, log } from '../common/Logger';
 import { normalizeFrame } from '../vision/FrameNormalizer';
 
@@ -66,7 +65,7 @@ export class LightFeature implements Feature {
     let luma: number | undefined = undefined;
     try {
       const frame = await this.services.camera.nextFrame();
-      await normalizeFrame(frame, FRAME_ROTATION);
+      await normalizeFrame(frame, this.services.camera.frameRotation());
       luma = await this.averageLuma(frame);
       frame.release();
     } catch (error) {

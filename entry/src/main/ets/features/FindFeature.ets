@@ -2,7 +2,7 @@ import { image } from '@kit.ImageKit';
 import { Feature, FeatureServices } from './Feature';
 import { computeGuidance } from './FindGuidance';
 import { GuidanceCoach } from './GuidanceCoach';
-import { FIND_FRAME_INTERVAL_MS, FIND_THRESHOLD, FRAME_ROTATION } from '../common/Config';
+import { FIND_FRAME_INTERVAL_MS, FIND_THRESHOLD } from '../common/Config';
 import { Detection } from '../vision/DetectionTypes';
 import { normalizeFrame } from '../vision/FrameNormalizer';
 
@@ -51,7 +51,7 @@ export class FindFeature implements Feature {
     if (!this.running) {
       return;
     }
-    const content = await normalizeFrame(frame, FRAME_ROTATION);
+    const content = await normalizeFrame(frame, this.services.camera.frameRotation());
     const result = await this.services.detector.detect(frame, FIND_THRESHOLD);
     if (!this.running) {
       return;

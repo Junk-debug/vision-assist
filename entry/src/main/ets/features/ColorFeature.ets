@@ -1,5 +1,4 @@
 import { Feature, FeatureServices } from './Feature';
-import { FRAME_ROTATION } from '../common/Config';
 import { describeError, log } from '../common/Logger';
 import { normalizeFrame } from '../vision/FrameNormalizer';
 import { nameColor } from '../vision/ColorNamer';
@@ -24,7 +23,7 @@ export class ColorFeature implements Feature {
     this.services.setStatus('Checking the color.');
     try {
       const frame = await this.services.camera.nextFrame();
-      const content = await normalizeFrame(frame, FRAME_ROTATION);
+      const content = await normalizeFrame(frame, this.services.camera.frameRotation());
       const info = await frame.getImageInfo();
       const buffer = new ArrayBuffer(frame.getPixelBytesNumber());
       await frame.readPixelsToBuffer(buffer);

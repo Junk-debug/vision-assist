@@ -1,5 +1,4 @@
 import { Feature, FeatureServices } from './Feature';
-import { FRAME_ROTATION } from '../common/Config';
 import { describeError, log } from '../common/Logger';
 import { ContentRect } from '../vision/DetectionTypes';
 import { normalizeFrame } from '../vision/FrameNormalizer';
@@ -28,7 +27,7 @@ export class ReadFeature implements Feature {
     }
     try {
       const frame = await this.services.camera.nextFrame();
-      const content = await normalizeFrame(frame, FRAME_ROTATION);
+      const content = await normalizeFrame(frame, this.services.camera.frameRotation());
       const result = await this.services.textReader.read(frame);
       frame.release();
       if (result === undefined) {
