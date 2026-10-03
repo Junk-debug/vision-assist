@@ -56,7 +56,7 @@ export struct HomePage {
 
   build() {
     Scroll() {
-      Column({ space: Spacing.md }) {
+      Column({ space: Spacing.lg }) {
         Column({ space: Spacing.xs }) {
           Text(APP_NAME)
             .fontSize(FontSize.display)
@@ -64,7 +64,7 @@ export struct HomePage {
             .fontColor(Palette.textPrimary)
             .accessibilityText(APP_NAME)
           Text(TAGLINE)
-            .fontSize(FontSize.body)
+            .fontSize(FontSize.subtitle)
             .fontColor(Palette.textSecondary)
         }
         .width('100%')
@@ -72,7 +72,7 @@ export struct HomePage {
         .padding({ top: Spacing.xxl, bottom: Spacing.lg })
 
         ForEach(this.rows(), (row: TileRow) => {
-          Row({ space: Spacing.md }) {
+          Row({ space: Spacing.lg }) {
             ForEach(row.tiles, (info: FeatureInfo, position: number) => {
               Column() {
                 FeatureTile({

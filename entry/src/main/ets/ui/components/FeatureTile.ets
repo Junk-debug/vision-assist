@@ -32,7 +32,7 @@ export struct FeatureTile {
         .fontWeight(FontWeight.Medium)
         .fontColor(Palette.textPrimary)
       Text(info.description)
-        .fontSize(FontSize.body)
+        .fontSize(FontSize.tileBody)
         .fontColor(Palette.textSecondary)
     }
     .alignItems(HorizontalAlign.Start)

@@ -57,6 +57,8 @@ export class FontSize {
   static readonly title: number = 22;
   static readonly tileTitle: number = 20;
   static readonly body: number = 16;
+  static readonly tileBody: number = 17;
+  static readonly subtitle: number = 18;
   static readonly status: number = 20;
   static readonly button: number = 18;
   static readonly caption: number = 13;
