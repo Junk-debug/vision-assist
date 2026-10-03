@@ -1,4 +1,4 @@
-import { Detection } from '../vision/DetectionTypes';
+import { NormalizedBox } from '../vision/DetectionTypes';
 
 const CENTER_WEIGHT: number = 0.55;
 const SIZE_WEIGHT: number = 0.45;
@@ -18,13 +18,11 @@ export interface Guidance {
   direction: string;
 }
 
-export const NOT_FOUND: Guidance = { found: false, closeness: 0, arrived: false, pulseMs: 0, direction: '' };
-
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-export function computeGuidance(target: Detection): Guidance {
+export function computeGuidance(target: NormalizedBox, fullSizeSide: number = FULL_SIZE_SIDE): Guidance {
   const centerX = (target.x1 + target.x2) / 2;
   const centerY = (target.y1 + target.y2) / 2;
   const offsetX = centerX - 0.5;
@@ -32,7 +30,7 @@ export function computeGuidance(target: Detection): Guidance {
   const offCenter = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
   const centerScore = 1 - clamp01(offCenter / CENTER_RANGE);
   const side = Math.sqrt(Math.max(0, (target.x2 - target.x1) * (target.y2 - target.y1)));
-  const sizeScore = clamp01(side / FULL_SIZE_SIDE);
+  const sizeScore = clamp01(side / fullSizeSide);
   const closeness = clamp01(CENTER_WEIGHT * centerScore + SIZE_WEIGHT * sizeScore);
   const arrived = closeness >= ARRIVED_CLOSENESS && sizeScore >= ARRIVED_SIZE;
   const pulseMs = SLOWEST_PULSE_MS - (SLOWEST_PULSE_MS - FASTEST_PULSE_MS) * Math.pow(closeness, 1.5);

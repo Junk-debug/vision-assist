@@ -1,16 +1,10 @@
 import { image } from '@kit.ImageKit';
 import { Feature, FeatureServices } from './Feature';
-import { computeGuidance, Guidance, NOT_FOUND } from './FindGuidance';
+import { computeGuidance } from './FindGuidance';
+import { GuidanceCoach } from './GuidanceCoach';
 import { FIND_FRAME_INTERVAL_MS, FIND_THRESHOLD, FRAME_ROTATION } from '../common/Config';
-import { Haptics } from '../haptics/Haptics';
 import { Detection } from '../vision/DetectionTypes';
 import { normalizeFrame } from '../vision/FrameNormalizer';
-
-const PULSE_DURATION_MS: number = 40;
-const ARRIVED_VIBRATION_MS: number = 600;
-const SPEECH_GAP_MS: number = 3000;
-const LOST_AFTER_MS: number = 1500;
-const TREND_MARGIN: number = 0.08;
 
 export class FindFeature implements Feature {
   readonly id: string = 'find';
@@ -19,15 +13,9 @@ export class FindFeature implements Feature {
   readonly hint: string = 'Double tap to choose an object to find, then follow the vibration and voice';
   readonly continuous: boolean = true;
   private readonly services: FeatureServices;
-  private readonly haptics: Haptics = new Haptics();
+  private coach?: GuidanceCoach;
   private target: string = '';
   private running: boolean = false;
-  private pulseTimer: number = -1;
-  private pulsePeriod: number = 0;
-  private lastCloseness: number = 0;
-  private lastSpeechAt: number = 0;
-  private lastSeenAt: number = 0;
-  private arrivedAnnounced: boolean = false;
 
   constructor(services: FeatureServices) {
     this.services = services;
@@ -39,10 +27,12 @@ export class FindFeature implements Feature {
 
   async start(): Promise<void> {
     this.running = true;
-    this.lastCloseness = 0;
-    this.lastSpeechAt = 0;
-    this.lastSeenAt = Date.now();
-    this.arrivedAnnounced = false;
+    this.coach = new GuidanceCoach(this.services, {
+      name: this.target,
+      searchingStatus: `Searching for ${this.target.toLowerCase()}.`,
+      searchingSpeech: 'Searching. Turn slowly.'
+    }, 0);
+    this.coach.start(Date.now());
     this.services.setStatus(`Looking for ${this.target.toLowerCase()}.`);
     this.services.narrator.announce(`Looking for ${this.target.toLowerCase()}. Move the phone slowly.`, true);
     this.services.camera.setFrameHandler((frame: image.PixelMap) => this.process(frame), FIND_FRAME_INTERVAL_MS);
@@ -51,8 +41,7 @@ export class FindFeature implements Feature {
   stop(): void {
     this.running = false;
     this.services.camera.setFrameHandler(undefined, 0);
-    this.setPulse(0);
-    this.haptics.stop();
+    this.coach?.stop();
     this.services.overlay.clear();
     this.services.setStatus('Stopped.');
     this.services.narrator.announce('Search stopped', true);
@@ -69,13 +58,7 @@ export class FindFeature implements Feature {
     }
     this.services.overlay.drawDetections(result.detections, content, this.target);
     const match = this.bestMatch(result.detections);
-    const now = Date.now();
-    if (match === undefined) {
-      this.onLost(now);
-      return;
-    }
-    this.lastSeenAt = now;
-    this.onGuidance(computeGuidance(match), now);
+    this.coach?.update(match === undefined ? undefined : computeGuidance(match), Date.now());
   }
 
   private bestMatch(detections: Detection[]): Detection | undefined {
@@ -86,63 +69,5 @@ export class FindFeature implements Feature {
       }
     }
     return best;
-  }
-
-  private onLost(now: number): void {
-    this.setPulse(0);
-    this.lastCloseness = 0;
-    this.arrivedAnnounced = false;
-    if (now - this.lastSeenAt > LOST_AFTER_MS) {
-      this.services.setStatus(`Searching for ${this.target.toLowerCase()}.`);
-      this.speak('Searching. Turn slowly.', now);
-    }
-  }
-
-  private onGuidance(guidance: Guidance, now: number): void {
-    const percent = Math.round(guidance.closeness * 100);
-    this.services.setStatus(`${this.target}: ${percent}% close. ${guidance.direction}`);
-    if (guidance.arrived) {
-      this.setPulse(0);
-      if (!this.arrivedAnnounced) {
-        this.arrivedAnnounced = true;
-        this.haptics.pulse(ARRIVED_VIBRATION_MS);
-        this.services.narrator.announce(`${this.target} is right in front of you.`, true);
-        this.lastSpeechAt = now;
-      }
-      return;
-    }
-    this.arrivedAnnounced = false;
-    this.setPulse(guidance.pulseMs);
-    const trend = guidance.closeness - this.lastCloseness;
-    let message = guidance.direction;
-    if (trend > TREND_MARGIN) {
-      message = `Warmer. ${guidance.direction}`;
-    } else if (trend < -TREND_MARGIN) {
-      message = `Colder. ${guidance.direction}`;
-    }
-    this.lastCloseness = guidance.closeness;
-    this.speak(message, now);
-  }
-
-  private speak(message: string, now: number): void {
-    if (message === '' || now - this.lastSpeechAt < SPEECH_GAP_MS) {
-      return;
-    }
-    this.lastSpeechAt = now;
-    this.services.narrator.announce(message);
-  }
-
-  private setPulse(periodMs: number): void {
-    if (periodMs === this.pulsePeriod) {
-      return;
-    }
-    if (this.pulseTimer >= 0) {
-      clearInterval(this.pulseTimer);
-      this.pulseTimer = -1;
-    }
-    this.pulsePeriod = periodMs;
-    if (periodMs > 0) {
-      this.pulseTimer = setInterval(() => this.haptics.pulse(PULSE_DURATION_MS), periodMs);
-    }
   }
 }
