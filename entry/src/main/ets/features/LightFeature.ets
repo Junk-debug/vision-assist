@@ -1,7 +1,9 @@
 import { image } from '@kit.ImageKit';
 import { sensor } from '@kit.SensorServiceKit';
 import { Feature, FeatureServices } from './Feature';
+import { FRAME_ROTATION } from '../common/Config';
 import { describeError, log } from '../common/Logger';
+import { normalizeFrame } from '../vision/FrameNormalizer';
 
 const SENSOR_TIMEOUT_MS: number = 1500;
 const SENSOR_INTERVAL_NS: number = 100000000;
@@ -13,6 +15,7 @@ const BRIGHT_LUX: number = 2000;
 const DARK_LUMA: number = 35;
 const DIM_LUMA: number = 85;
 const NORMAL_LUMA: number = 170;
+const SENSOR_CONFLICT_LUMA: number = 80;
 
 export function describeLux(lux: number): string {
   const rounded = Math.round(lux);
@@ -60,17 +63,21 @@ export class LightFeature implements Feature {
     this.services.overlay.clear();
     this.services.setStatus('Checking the light.');
     const lux = await this.readSensor();
-    if (lux !== undefined) {
-      this.report(describeLux(lux));
-      return;
-    }
+    let luma: number | undefined = undefined;
     try {
       const frame = await this.services.camera.nextFrame();
-      const luma = await this.averageLuma(frame);
+      await normalizeFrame(frame, FRAME_ROTATION);
+      luma = await this.averageLuma(frame);
       frame.release();
-      this.report(describeLuma(luma));
     } catch (error) {
-      log(`light estimate failed ${describeError(error)}`);
+      log(`light estimate from camera failed ${describeError(error)}`);
+    }
+    const sensorLooksBroken = lux !== undefined && lux < DARK_LUX && luma !== undefined && luma > SENSOR_CONFLICT_LUMA;
+    if (lux !== undefined && !sensorLooksBroken) {
+      this.report(describeLux(lux));
+    } else if (luma !== undefined) {
+      this.report(describeLuma(luma));
+    } else {
       this.report('The light could not be checked.');
     }
   }
