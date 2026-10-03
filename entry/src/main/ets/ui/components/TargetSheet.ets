@@ -61,7 +61,7 @@ export struct TargetSheet {
           .maxLength(WORD_MAX_LENGTH)
           .enterKeyType(EnterKeyType.Go)
           .accessibilityText('Word to find')
-          .accessibilityDescription('Type the word you want to find, then press Find this word')
+          .accessibilityDescription('Type the word you want to find, then press Start')
           .onChange((value: string) => {
             this.typed = value;
           })
@@ -69,7 +69,7 @@ export struct TargetSheet {
             this.onPick(this.typed);
           })
         BigButton({
-          label: 'Find this word',
+          label: 'Start',
           hint: 'Start looking for the typed word',
           onTap: () => {
             this.onPick(this.typed);
@@ -97,5 +97,6 @@ export struct TargetSheet {
     .padding({ left: Spacing.xl, right: Spacing.xl, bottom: Spacing.lg })
     .backgroundColor(Palette.card)
     .borderRadius({ topLeft: Radius.sheet, topRight: Radius.sheet })
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 }
