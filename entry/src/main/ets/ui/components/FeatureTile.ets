@@ -1,5 +1,5 @@
 import { FeatureInfo } from '../FeatureCatalog';
-import { FontSize, Motion, Palette, Radius, Sizes, Spacing } from '../theme/Theme';
+import { FontSize, IconSize, Motion, Palette, Radius, Sizes, Spacing } from '../theme/Theme';
 
 @Component
 export struct FeatureTile {
@@ -14,7 +14,7 @@ export struct FeatureTile {
   iconChip(info: FeatureInfo) {
     Stack() {
       SymbolGlyph(info.icon)
-        .fontSize(FontSize.icon)
+        .fontSize(IconSize.tile)
         .fontColor([info.accent])
     }
     .width(Sizes.iconChip)

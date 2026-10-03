@@ -1,5 +1,5 @@
 import { BigButton } from './BigButton';
-import { FontSize, Palette, Radius, Sizes, Spacing } from '../theme/Theme';
+import { FontSize, IconSize, Palette, Radius, Sizes, Spacing } from '../theme/Theme';
 
 const WORD_MAX_LENGTH: number = 24;
 
@@ -20,7 +20,7 @@ export struct TargetSheet {
           .fontColor(Palette.textPrimary)
           .layoutWeight(1)
         SymbolGlyph($r('sys.symbol.chevron_right'))
-          .fontSize(FontSize.body)
+          .fontSize(IconSize.chevron)
           .fontColor([Palette.textSecondary])
           .accessibilityLevel('no')
       }
@@ -54,6 +54,7 @@ export struct TargetSheet {
           .fontSize(FontSize.tileTitle)
           .fontColor(Palette.textPrimary)
           .placeholderColor(Palette.textSecondary)
+          .placeholderFont({ size: FontSize.tileTitle })
           .backgroundColor(Palette.inputFill)
           .borderRadius(Radius.input)
           .constraintSize({ minHeight: Sizes.primaryButton })

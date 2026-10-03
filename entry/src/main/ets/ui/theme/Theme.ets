@@ -59,8 +59,12 @@ export class FontSize {
   static readonly status: number = 20;
   static readonly button: number = 18;
   static readonly caption: number = 13;
-  static readonly icon: number = 26;
-  static readonly topBarIcon: number = 22;
+}
+
+export class IconSize {
+  static readonly tile: string = '26vp';
+  static readonly topBar: string = '22vp';
+  static readonly chevron: string = '16vp';
 }
 
 export class Sizes {
@@ -81,6 +85,7 @@ export class TileLayout {
   static readonly columns: number = 2;
   static readonly firstTileWide: boolean = true;
   static readonly lastOddTileWide: boolean = true;
+  static readonly singleColumnFontScale: number = 1.6;
 }
 
 export class Motion {

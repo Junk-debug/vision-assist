@@ -17,17 +17,16 @@ class TileRow {
   }
 }
 
-function layoutRows(items: FeatureInfo[]): TileRow[] {
+function layoutRows(items: FeatureInfo[], columns: number): TileRow[] {
   const rows: TileRow[] = [];
   let index = 0;
-  if (TileLayout.firstTileWide && items.length > 0) {
+  if (TileLayout.firstTileWide && columns > 1 && items.length > 0) {
     rows.push(new TileRow([items[0]], 0));
     index = 1;
   }
   while (index < items.length) {
     const remaining = items.length - index;
-    const count = remaining < TileLayout.columns && TileLayout.lastOddTileWide ? 1 :
-      Math.min(TileLayout.columns, remaining);
+    const count = remaining < columns && TileLayout.lastOddTileWide ? 1 : Math.min(columns, remaining);
     rows.push(new TileRow(items.slice(index, index + count), index));
     index += count;
   }
@@ -38,7 +37,12 @@ function layoutRows(items: FeatureInfo[]): TileRow[] {
 export struct HomePage {
   onOpen: (id: string) => void = (id: string) => {};
   @State contentHeights: number[] = FEATURE_CATALOG.map((info: FeatureInfo) => 0);
-  private rows: TileRow[] = layoutRows(FEATURE_CATALOG);
+  @StorageProp('fontScale') fontScale: number = 1;
+
+  private rows(): TileRow[] {
+    const columns = this.fontScale >= TileLayout.singleColumnFontScale ? 1 : TileLayout.columns;
+    return layoutRows(FEATURE_CATALOG, columns);
+  }
 
   private rowContentHeight(row: TileRow): number {
     return Math.max(...this.contentHeights.slice(row.first, row.first + row.tiles.length));
@@ -67,7 +71,7 @@ export struct HomePage {
         .alignItems(HorizontalAlign.Start)
         .padding({ top: Spacing.xxl, bottom: Spacing.lg })
 
-        ForEach(this.rows, (row: TileRow) => {
+        ForEach(this.rows(), (row: TileRow) => {
           Row({ space: Spacing.md }) {
             ForEach(row.tiles, (info: FeatureInfo, position: number) => {
               Column() {

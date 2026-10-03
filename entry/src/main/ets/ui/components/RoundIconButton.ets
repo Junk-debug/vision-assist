@@ -1,4 +1,4 @@
-import { FontSize, Motion, Palette, Sizes } from '../theme/Theme';
+import { IconSize, Motion, Palette, Sizes } from '../theme/Theme';
 
 @Component
 export struct RoundIconButton {
@@ -11,7 +11,7 @@ export struct RoundIconButton {
   build() {
     Stack() {
       SymbolGlyph(this.icon)
-        .fontSize(FontSize.topBarIcon)
+        .fontSize(IconSize.topBar)
         .fontColor([Palette.textPrimary])
         .accessibilityLevel('no')
     }
