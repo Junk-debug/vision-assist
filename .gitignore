@@ -20,3 +20,4 @@ amd64root/
 msl/
 *.onnx
 *.pt
+entry/.test/
