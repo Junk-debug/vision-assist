@@ -1,0 +1,20 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "module description"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "Vision Assist"
+    },
+    {
+      "name": "camera_reason",
+      "value": "Recognize objects and text in front of you"
+    }
+  ]
+}
