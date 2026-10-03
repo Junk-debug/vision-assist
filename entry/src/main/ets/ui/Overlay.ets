@@ -87,7 +87,7 @@ export class Overlay {
       const captionY = this.captionTop(captionX, captionW, [y - LABEL_HEIGHT - 2, y + 2, y + boxH + 2], placed);
       placed.push({ x1: captionX, y1: captionY, x2: captionX + captionW, y2: captionY + LABEL_HEIGHT });
       this.pill(captionX, captionY, captionW, LABEL_HEIGHT, color);
-      this.canvas.fillStyle = Palette.overlayInk;
+      this.canvas.fillStyle = highlighted ? Palette.overlayTargetInk : Palette.overlayInk;
       this.canvas.fillText(caption, captionX + LABEL_PADDING, captionY + LABEL_HEIGHT - 6);
     }
   }

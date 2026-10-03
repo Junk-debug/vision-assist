@@ -15,6 +15,7 @@ export class Palette {
   static readonly previewBackground: string = '#000000';
   static readonly overlayInk: string = '#FFFFFF';
   static readonly overlayTarget: string = '#00C853';
+  static readonly overlayTargetInk: string = '#182431';
   static readonly scrim: string = '#66000000';
 }
 
