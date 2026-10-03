@@ -21,7 +21,7 @@ The app opens on a list of features without starting the camera. Each feature ha
 
 | Start screen | Find an object, back camera | Front camera |
 |---|---|---|
-| ![Start screen](docs/screenshots/home.png) | ![Find an object](docs/screenshots/find-object-back-camera.png) | ![Front camera](docs/screenshots/find-object-front-camera.png) |
+| ![Start screen](docs/screenshots/home.png) | _Live detection screenshot coming soon_ | _Front camera screenshot coming soon_ |
 
 | Find a word picker | Find an object picker |
 |---|---|
