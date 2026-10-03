@@ -83,6 +83,8 @@ hvigor prints nothing on success; the per-test result is in `entry/.test/default
 3. Start an emulator from DevEco Studio's Device Manager (not from the command line, see `docs/EMULATOR.md`).
 4. Run the `entry` module. Allow camera access when asked, then press "Start describing".
 
+Installing on a physical phone (signing, USB debugging, things to check): see `docs/DEVICE.md`.
+
 Command line (with `devecocli`):
 
 ```sh
