@@ -8,9 +8,6 @@ const MARKER_COLOR: string = '#FFFFFF';
 
 export class ColorFeature implements Feature {
   readonly id: string = 'color';
-  readonly title: string = 'What color is this?';
-  readonly activeTitle: string = 'Checking color';
-  readonly hint: string = 'Double tap to hear the color of what is in the middle of the camera view';
   readonly continuous: boolean = false;
   private readonly services: FeatureServices;
 

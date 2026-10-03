@@ -8,9 +8,6 @@ import { normalizeFrame } from '../vision/FrameNormalizer';
 
 export class FindFeature implements Feature {
   readonly id: string = 'find';
-  readonly title: string = 'Find an object';
-  readonly activeTitle: string = 'Stop finding';
-  readonly hint: string = 'Double tap to choose an object to find, then follow the vibration and voice';
   readonly continuous: boolean = true;
   private readonly services: FeatureServices;
   private coach?: GuidanceCoach;

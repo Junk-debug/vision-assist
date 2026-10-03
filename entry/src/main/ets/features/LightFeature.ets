@@ -48,9 +48,6 @@ export function describeLuma(luma: number): string {
 
 export class LightFeature implements Feature {
   readonly id: string = 'light';
-  readonly title: string = 'Is the light on?';
-  readonly activeTitle: string = 'Checking light';
-  readonly hint: string = 'Double tap to hear whether the light is on';
   readonly continuous: boolean = false;
   private readonly services: FeatureServices;
 

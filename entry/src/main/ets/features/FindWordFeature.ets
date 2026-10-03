@@ -9,9 +9,6 @@ import { findWord, WordMatch } from '../vision/text/WordMatcher';
 
 export class FindWordFeature implements Feature {
   readonly id: string = 'findword';
-  readonly title: string = 'Find a word';
-  readonly activeTitle: string = 'Stop finding word';
-  readonly hint: string = 'Double tap to choose or type a word to find, then follow the vibration and voice';
   readonly continuous: boolean = true;
   private readonly services: FeatureServices;
   private coach?: GuidanceCoach;

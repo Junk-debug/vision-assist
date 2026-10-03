@@ -6,9 +6,6 @@ import { TextReader } from '../vision/text/TextReader';
 
 export interface Feature {
   readonly id: string;
-  readonly title: string;
-  readonly activeTitle: string;
-  readonly hint: string;
   readonly continuous: boolean;
   start(): Promise<void>;
   stop(): void;

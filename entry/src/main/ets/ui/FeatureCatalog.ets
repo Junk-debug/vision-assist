@@ -14,7 +14,6 @@ export interface FeatureInfo {
   icon: Resource;
   accent: string;
   tint: string;
-  continuous: boolean;
   needsDetector: boolean;
   startLabel: string;
   stopLabel: string;
@@ -35,7 +34,6 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     icon: $r('sys.symbol.eye_viewfinder'),
     accent: Accent.describe,
     tint: Accent.describeTint,
-    continuous: true,
     needsDetector: true,
     startLabel: 'Start describing',
     stopLabel: 'Stop describing',
@@ -54,7 +52,6 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     icon: $r('sys.symbol.doc_text'),
     accent: Accent.read,
     tint: Accent.readTint,
-    continuous: false,
     needsDetector: false,
     startLabel: 'Read now',
     stopLabel: 'Read now',
@@ -73,7 +70,6 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     icon: $r('sys.symbol.magnifyingglass'),
     accent: Accent.find,
     tint: Accent.findTint,
-    continuous: true,
     needsDetector: true,
     startLabel: 'Start finding',
     stopLabel: 'Stop finding',
@@ -92,7 +88,6 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     icon: $r('sys.symbol.text_and_magnifyingglass'),
     accent: Accent.word,
     tint: Accent.wordTint,
-    continuous: true,
     needsDetector: false,
     startLabel: 'Start finding',
     stopLabel: 'Stop finding',
@@ -111,7 +106,6 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     icon: $r('sys.symbol.lightbulb_max'),
     accent: Accent.light,
     tint: Accent.lightTint,
-    continuous: false,
     needsDetector: false,
     startLabel: 'Check the light',
     stopLabel: 'Check the light',
@@ -130,7 +124,6 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     icon: $r('sys.symbol.paintpalette'),
     accent: Accent.color,
     tint: Accent.colorTint,
-    continuous: false,
     needsDetector: false,
     startLabel: 'Check the color',
     stopLabel: 'Check the color',

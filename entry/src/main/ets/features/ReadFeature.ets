@@ -8,9 +8,6 @@ const MAX_SPOKEN_CHARS: number = 1200;
 
 export class ReadFeature implements Feature {
   readonly id: string = 'read';
-  readonly title: string = 'Read text';
-  readonly activeTitle: string = 'Reading text';
-  readonly hint: string = 'Double tap to read the printed text in front of the camera';
   readonly continuous: boolean = false;
   private readonly services: FeatureServices;
 

@@ -9,7 +9,7 @@ import { CameraPreview } from '../ui/components/CameraPreview';
 import { StatusCard } from '../ui/components/StatusCard';
 import { TargetSheet } from '../ui/components/TargetSheet';
 import { TopBar } from '../ui/components/TopBar';
-import { Palette, Sizes, Spacing } from '../ui/theme/Theme';
+import { Palette, Spacing } from '../ui/theme/Theme';
 
 @Component
 export struct FeaturePage {
@@ -60,6 +60,10 @@ export struct FeaturePage {
     appServices.narrator.announce('Feature list', true);
   }
 
+  private continuous(): boolean {
+    return this.binding !== undefined && this.binding.feature.continuous;
+  }
+
   private needsTarget(): boolean {
     return this.info.picker !== PickerKind.NONE && this.target === '';
   }
@@ -96,7 +100,7 @@ export struct FeaturePage {
       this.report('The recognition model could not be loaded.');
       return;
     }
-    if (this.info.continuous) {
+    if (this.continuous()) {
       await this.startFeature();
     } else {
       this.status = this.info.readyText;
@@ -138,7 +142,7 @@ export struct FeaturePage {
       this.report('The recognition model is still loading.');
       return;
     }
-    if (this.info.continuous) {
+    if (this.continuous()) {
       if (this.running) {
         this.stopFeature();
       } else {
@@ -199,7 +203,7 @@ export struct FeaturePage {
   }
 
   private primaryLabel(): string {
-    if (this.info.continuous) {
+    if (this.continuous()) {
       return this.running ? this.info.stopLabel : this.info.startLabel;
     }
     return this.busy ? this.info.busyLabel : this.info.startLabel;
@@ -239,15 +243,20 @@ export struct FeaturePage {
           })
         } else {
           Column({ space: Spacing.md }) {
-            CameraPreview({
-              canvas: this.canvas,
-              sceneOverlay: this.sceneOverlay,
-              onSurface: (surfaceId: string) => {
-                this.onSurface(surfaceId);
-              }
-            })
-            .constraintSize({ maxWidth: Sizes.maxContentWidth })
-            StatusCard({ status: this.status, detail: this.detail })
+            Column({ space: Spacing.md }) {
+              CameraPreview({
+                canvas: this.canvas,
+                sceneOverlay: this.sceneOverlay,
+                onSurface: (surfaceId: string) => {
+                  this.onSurface(surfaceId);
+                }
+              })
+              .flexShrink(1)
+              StatusCard({ status: this.status, detail: this.detail })
+            }
+            .layoutWeight(1)
+            .width('100%')
+            .justifyContent(FlexAlign.Start)
             BigButton({
               label: this.primaryLabel(),
               hint: this.primaryHint(),

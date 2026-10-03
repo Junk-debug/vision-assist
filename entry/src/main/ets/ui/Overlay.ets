@@ -67,8 +67,12 @@ export class Overlay {
   drawDetections(detections: Detection[], content: ContentRect, highlightLabel: string = ''): void {
     this.clear();
     this.canvas.font = LABEL_FONT;
-    for (const detection of detections) {
-      const highlighted = highlightLabel !== '' && detection.label === highlightLabel;
+    const isTarget = (detection: Detection): boolean => highlightLabel !== '' && detection.label === highlightLabel;
+    const placed: NormalizedBox[] = [];
+    const ordered = detections.filter((detection: Detection) => !isTarget(detection))
+      .concat(detections.filter((detection: Detection) => isTarget(detection)));
+    for (const detection of ordered) {
+      const highlighted = isTarget(detection);
       const color = highlighted ? Palette.overlayTarget : this.accent;
       const x = this.left(detection.x1, detection.x2, content);
       const y = this.mapY(detection.y1, content);
@@ -79,11 +83,20 @@ export class Overlay {
       this.canvas.strokeRect(x, y, boxW, boxH);
       const caption = `${detection.label} ${Math.round(detection.score * 100)}%`;
       const captionW = this.canvas.measureText(caption).width + LABEL_PADDING * 2;
-      const captionY = Math.max(0, y - LABEL_HEIGHT - 2);
-      this.pill(x, captionY, captionW, LABEL_HEIGHT, color);
+      const captionX = Math.max(0, Math.min(x, this.width - captionW));
+      const captionY = this.captionTop(captionX, captionW, [y - LABEL_HEIGHT - 2, y + 2, y + boxH + 2], placed);
+      placed.push({ x1: captionX, y1: captionY, x2: captionX + captionW, y2: captionY + LABEL_HEIGHT });
+      this.pill(captionX, captionY, captionW, LABEL_HEIGHT, color);
       this.canvas.fillStyle = Palette.overlayInk;
-      this.canvas.fillText(caption, x + LABEL_PADDING, captionY + LABEL_HEIGHT - 6);
+      this.canvas.fillText(caption, captionX + LABEL_PADDING, captionY + LABEL_HEIGHT - 6);
     }
+  }
+
+  private captionTop(x: number, w: number, candidates: number[], placed: NormalizedBox[]): number {
+    const clamped = candidates.map((top: number) => Math.max(0, Math.min(top, this.height - LABEL_HEIGHT)));
+    const free = clamped.find((top: number) => placed.every((other: NormalizedBox) =>
+      x + w <= other.x1 || x >= other.x2 || top + LABEL_HEIGHT <= other.y1 || top >= other.y2));
+    return free !== undefined ? free : clamped[0];
   }
 
   drawTextLines(lines: TextLineResult[], content: ContentRect): void {

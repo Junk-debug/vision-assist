@@ -7,9 +7,6 @@ import { SceneTracker } from '../vision/SceneTracker';
 
 export class DescribeFeature implements Feature {
   readonly id: string = 'describe';
-  readonly title: string = 'Start describing';
-  readonly activeTitle: string = 'Stop describing';
-  readonly hint: string = 'Double tap to switch live description on or off';
   readonly continuous: boolean = true;
   private readonly services: FeatureServices;
   private readonly tracker: SceneTracker = new SceneTracker();

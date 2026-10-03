@@ -69,6 +69,7 @@ export class Sizes {
   static readonly minTouch: number = 48;
   static readonly primaryButton: number = 56;
   static readonly listRow: number = 64;
+  static readonly statusMinHeight: number = 120;
   static readonly statusMaxLines: number = 4;
   static readonly overlayStroke: number = 3;
   static readonly overlayTargetStroke: number = 6;

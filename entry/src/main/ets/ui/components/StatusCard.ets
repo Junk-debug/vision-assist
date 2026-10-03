@@ -7,18 +7,14 @@ export struct StatusCard {
 
   build() {
     Column({ space: Spacing.xs }) {
-      Scroll() {
-        Text(this.status)
-          .fontSize(FontSize.status)
-          .fontWeight(FontWeight.Medium)
-          .fontColor(Palette.textPrimary)
-          .width('100%')
-          .accessibilityText(this.status)
-      }
-      .width('100%')
-      .layoutWeight(1)
-      .align(Alignment.TopStart)
-      .scrollBar(BarState.Auto)
+      Text(this.status)
+        .fontSize(FontSize.status)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(Palette.textPrimary)
+        .maxLines(Sizes.statusMaxLines)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .width('100%')
+        .accessibilityText(this.status)
       if (this.detail !== '') {
         Text(this.detail)
           .fontSize(FontSize.caption)
@@ -30,8 +26,8 @@ export struct StatusCard {
       }
     }
     .width('100%')
-    .layoutWeight(1)
-    .constraintSize({ minHeight: Sizes.listRow })
+    .constraintSize({ minHeight: Sizes.statusMinHeight })
+    .justifyContent(FlexAlign.Start)
     .padding(Spacing.lg)
     .borderRadius(Radius.card)
     .backgroundColor(Palette.card)
