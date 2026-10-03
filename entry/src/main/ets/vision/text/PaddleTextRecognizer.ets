@@ -5,7 +5,7 @@ import { util } from '@kit.ArkTS';
 import { buildCharset, decodeGreedy } from './CtcDecoder';
 import { extractBoxes, groupIntoLines, TextBox } from './DbPostProcessor';
 import { resizeRgb } from './ImageOps';
-import { TextLineResult, TextReadResult, TextRecognizer } from './TextTypes';
+import { TextLineResult, TextReadResult, TextRecognizer, TextWordResult } from './TextTypes';
 import { describeError, log } from '../../common/Logger';
 import { loadModel } from '../ModelLoader';
 
@@ -73,6 +73,7 @@ export class PaddleTextRecognizer implements TextRecognizer {
     const lines = groupIntoLines(boxes);
     const lineTexts: string[] = [];
     const lineResults: TextLineResult[] = [];
+    const wordResults: TextWordResult[] = [];
     for (const line of lines) {
       const words: string[] = [];
       let x0 = width;
@@ -83,6 +84,7 @@ export class PaddleTextRecognizer implements TextRecognizer {
         const text = await this.readBox(pixels, rowBytes, box);
         if (text.length > 0) {
           words.push(text);
+          wordResults.push({ text: text, x1: box.x0 / width, y1: box.y0 / height, x2: box.x1 / width, y2: box.y1 / height });
           x0 = Math.min(x0, box.x0);
           y0 = Math.min(y0, box.y0);
           x1 = Math.max(x1, box.x1);
@@ -95,7 +97,7 @@ export class PaddleTextRecognizer implements TextRecognizer {
         lineResults.push({ text: text, x1: x0 / width, y1: y0 / height, x2: x1 / width, y2: y1 / height });
       }
     }
-    return { text: lineTexts.join('\n'), lines: lineResults, engine: this.name, elapsedMs: Date.now() - start };
+    return { text: lineTexts.join('\n'), lines: lineResults, words: wordResults, engine: this.name, elapsedMs: Date.now() - start };
   }
 
   private async detectBoxes(pixels: Uint8Array, rowBytes: number, width: number, height: number): Promise<TextBox[]> {

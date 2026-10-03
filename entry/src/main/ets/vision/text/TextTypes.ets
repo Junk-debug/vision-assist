@@ -1,16 +1,18 @@
 import { image } from '@kit.ImageKit';
+import { NormalizedBox } from '../DetectionTypes';
 
-export interface TextLineResult {
+export interface TextLineResult extends NormalizedBox {
   text: string;
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
+}
+
+export interface TextWordResult extends NormalizedBox {
+  text: string;
 }
 
 export interface TextReadResult {
   text: string;
   lines: TextLineResult[];
+  words: TextWordResult[];
   engine: string;
   elapsedMs: number;
 }
