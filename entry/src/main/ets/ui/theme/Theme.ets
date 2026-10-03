@@ -54,23 +54,21 @@ export class Radius {
 export class FontSize {
   static readonly display: number = 30;
   static readonly title: number = 22;
-  static readonly tileTitle: number = 18;
+  static readonly tileTitle: number = 20;
   static readonly body: number = 16;
   static readonly status: number = 20;
   static readonly button: number = 18;
   static readonly caption: number = 13;
-  static readonly icon: number = 24;
+  static readonly icon: number = 26;
   static readonly topBarIcon: number = 22;
 }
 
 export class Sizes {
-  static readonly iconChip: number = 44;
+  static readonly iconChip: number = 48;
   static readonly topBarButton: number = 48;
   static readonly minTouch: number = 48;
   static readonly primaryButton: number = 56;
   static readonly listRow: number = 64;
-  static readonly tileMinHeight: number = 132;
-  static readonly wideTileMinHeight: number = 88;
   static readonly statusMaxLines: number = 4;
   static readonly overlayStroke: number = 3;
   static readonly overlayTargetStroke: number = 6;
