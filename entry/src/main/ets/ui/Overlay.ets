@@ -1,5 +1,5 @@
-import { ContentRect, Detection } from '../vision/DetectionTypes';
-import { TextLineResult } from '../vision/text/TextTypes';
+import { ContentRect, Detection, NormalizedBox } from '../vision/DetectionTypes';
+import { TextLineResult, TextWordResult } from '../vision/text/TextTypes';
 
 const VISIBLE_TOP: number = 0.21875;
 const VISIBLE_HEIGHT: number = 0.5625;
@@ -68,6 +68,26 @@ export class Overlay {
       const y = this.mapY(line.y1, content);
       this.canvas.strokeRect(x, y, this.mapX(line.x2, content) - x, this.mapY(line.y2, content) - y);
     }
+  }
+
+  drawWordMatch(words: TextWordResult[], match: NormalizedBox | undefined, content: ContentRect): void {
+    this.clear();
+    this.canvas.lineWidth = 2;
+    this.canvas.strokeStyle = TEXT_BOX_COLOR;
+    for (const word of words) {
+      this.strokeBox(word, content);
+    }
+    if (match !== undefined) {
+      this.canvas.lineWidth = 6;
+      this.canvas.strokeStyle = TARGET_COLOR;
+      this.strokeBox(match, content);
+    }
+  }
+
+  private strokeBox(box: NormalizedBox, content: ContentRect): void {
+    const x = this.mapX(box.x1, content);
+    const y = this.mapY(box.y1, content);
+    this.canvas.strokeRect(x, y, this.mapX(box.x2, content) - x, this.mapY(box.y2, content) - y);
   }
 
   drawCenterMarker(content: ContentRect, color: string): void {

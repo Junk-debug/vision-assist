@@ -7,3 +7,7 @@ export const FIND_TARGETS: string[] = [
   'Mobile phone', 'Watch', 'Coin', 'Glasses', 'Bottle', 'Mug', 'Coffee cup', 'Backpack', 'Handbag',
   'Laptop', 'Tablet computer', 'Remote control', 'Computer mouse', 'Book', 'Umbrella', 'Chair', 'Door', 'Person'
 ];
+export const WORD_FRAME_INTERVAL_MS: number = 700;
+export const WORD_HOLD_MS: number = 1500;
+export const WORD_FULL_SIZE_SIDE: number = 0.25;
+export const WORD_TARGETS: string[] = ['EXIT', 'WC', 'PUSH', 'PULL', 'OPEN', 'CLOSED', 'PHARMACY', 'STOP'];

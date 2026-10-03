@@ -1,11 +1,12 @@
 import { abilityAccessCtrl, common, Permissions } from '@kit.AbilityKit';
 import { CameraSource } from '../camera/CameraSource';
-import { FIND_TARGETS } from '../common/Config';
+import { FIND_TARGETS, WORD_TARGETS } from '../common/Config';
 import { describeError, log } from '../common/Logger';
 import { ColorFeature } from '../features/ColorFeature';
 import { DescribeFeature } from '../features/DescribeFeature';
 import { Feature, FeatureServices } from '../features/Feature';
 import { FindFeature } from '../features/FindFeature';
+import { FindWordFeature } from '../features/FindWordFeature';
 import { LightFeature } from '../features/LightFeature';
 import { ReadFeature } from '../features/ReadFeature';
 import { Narrator } from '../speech/Narrator';
@@ -18,6 +19,7 @@ import { TextReader } from '../vision/text/TextReader';
 const PREVIEW_ASPECT: number = 9 / 16;
 const MAX_SHOWN_LINES: number = 4;
 const BUTTON_HEIGHT: number = 64;
+const WORD_MAX_LENGTH: number = 24;
 const IDLE_COLOR: string = '#1565C0';
 const ACTIVE_COLOR: string = '#C62828';
 const BUSY_COLOR: string = '#546E7A';
@@ -29,6 +31,8 @@ struct Index {
   @State statusText: string = 'Choose what you need.';
   @State timingText: string = '';
   @State pickerOpen: boolean = false;
+  @State wordPickerOpen: boolean = false;
+  @State typedWord: string = '';
   private xController: XComponentController = new XComponentController();
   private canvasSettings: RenderingContextSettings = new RenderingContextSettings(true);
   private canvas: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.canvasSettings);
@@ -40,12 +44,14 @@ struct Index {
   private services: FeatureServices = new FeatureServices(this.camera, this.detector, this.narrator, this.sceneOverlay,
     this.textReader, (text: string) => { this.statusText = text; }, (text: string) => { this.timingText = text; });
   private findFeature: FindFeature = new FindFeature(this.services);
+  private findWordFeature: FindWordFeature = new FindWordFeature(this.services);
   private features: Feature[] = [
     new DescribeFeature(this.services),
     new ReadFeature(this.services),
     new LightFeature(this.services),
     new ColorFeature(this.services),
-    this.findFeature
+    this.findFeature,
+    this.findWordFeature
   ];
   private activeFeature?: Feature;
   private surfaceId: string = '';
@@ -131,7 +137,23 @@ struct Index {
       this.narrator.announce('What do you want to find?', true);
       return;
     }
+    if (feature.id === this.findWordFeature.id) {
+      this.openWordPicker();
+      return;
+    }
     this.activate(feature);
+  }
+
+  private openWordPicker(): void {
+    this.stopActive();
+    if (!this.textReader.isAvailable()) {
+      this.statusText = 'Text reading is not available on this device yet.';
+      this.narrator.announce(this.statusText, true);
+      return;
+    }
+    this.typedWord = '';
+    this.wordPickerOpen = true;
+    this.narrator.announce('Which word do you want to find? Type it or choose one.', true);
   }
 
   private async activate(feature: Feature): Promise<void> {
@@ -153,6 +175,17 @@ struct Index {
     this.pickerOpen = false;
     this.findFeature.setTarget(label);
     this.activate(this.findFeature);
+  }
+
+  private chooseWord(word: string): void {
+    const trimmed = word.trim();
+    if (trimmed.length === 0) {
+      this.narrator.announce('Type a word first', true);
+      return;
+    }
+    this.wordPickerOpen = false;
+    this.findWordFeature.setTarget(trimmed);
+    this.activate(this.findWordFeature);
   }
 
   private buttonColor(feature: Feature): string {
@@ -269,6 +302,75 @@ struct Index {
             .accessibilityText('Cancel')
             .onClick(() => {
               this.pickerOpen = false;
+              this.narrator.announce('Cancelled', true);
+            })
+        }
+        .padding({ left: 16, right: 16, bottom: 24 })
+        .width('100%')
+        .height('100%')
+        .backgroundColor('#F2000000')
+      }
+      if (this.wordPickerOpen) {
+        Column({ space: 8 }) {
+          Text('Which word do you want to find?')
+            .fontSize(24)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(Color.White)
+            .padding({ top: 56, bottom: 8 })
+            .accessibilityText('Which word do you want to find?')
+          Row({ space: 8 }) {
+            TextInput({ text: this.typedWord, placeholder: 'Type a word' })
+              .fontSize(28)
+              .height(BUTTON_HEIGHT)
+              .layoutWeight(1)
+              .maxLength(WORD_MAX_LENGTH)
+              .enterKeyType(EnterKeyType.Go)
+              .accessibilityText('Word to find')
+              .accessibilityDescription('Type the word you want to find, then press Start')
+              .onChange((value: string) => {
+                this.typedWord = value;
+              })
+              .onSubmit(() => {
+                this.chooseWord(this.typedWord);
+              })
+            Button('Start')
+              .fontSize(20)
+              .fontWeight(FontWeight.Bold)
+              .width(112)
+              .height(BUTTON_HEIGHT)
+              .backgroundColor(ACTIVE_COLOR)
+              .accessibilityText('Start')
+              .accessibilityDescription('Start looking for the typed word')
+              .onClick(() => {
+                this.chooseWord(this.typedWord);
+              })
+          }
+          .width('100%')
+          Scroll() {
+            Column({ space: 8 }) {
+              ForEach(WORD_TARGETS, (word: string) => {
+                Button(word)
+                  .fontSize(20)
+                  .width('100%')
+                  .height(BUTTON_HEIGHT)
+                  .backgroundColor(IDLE_COLOR)
+                  .accessibilityText(`Find the word ${word}`)
+                  .accessibilityDescription('Start looking for this word')
+                  .onClick(() => {
+                    this.chooseWord(word);
+                  })
+              }, (word: string) => word)
+            }
+          }
+          .layoutWeight(1)
+          Button('Cancel')
+            .fontSize(20)
+            .width('100%')
+            .height(BUTTON_HEIGHT)
+            .backgroundColor(BUSY_COLOR)
+            .accessibilityText('Cancel')
+            .onClick(() => {
+              this.wordPickerOpen = false;
               this.narrator.announce('Cancelled', true);
             })
         }
