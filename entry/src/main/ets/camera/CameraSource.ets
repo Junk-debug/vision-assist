@@ -21,6 +21,7 @@ export class CameraSource {
   private lastFrameAt: number = 0;
   private minIntervalMs: number = 0;
   private active: boolean = false;
+  private frameRequest?: (frame: image.PixelMap) => void;
 
   setFrameHandler(handler: FrameHandler | undefined, minIntervalMs: number): void {
     this.handler = handler;
@@ -69,12 +70,29 @@ export class CameraSource {
     }
   }
 
+  nextFrame(): Promise<image.PixelMap> {
+    return new Promise((resolve: (frame: image.PixelMap) => void) => {
+      this.frameRequest = resolve;
+    });
+  }
+
   private readFrame(width: number, height: number): void {
     const receiver = this.receiver;
     if (!receiver) {
       return;
     }
     receiver.readNextImage().then(async (frame: image.Image) => {
+      const requested = this.frameRequest;
+      if (requested !== undefined) {
+        this.frameRequest = undefined;
+        try {
+          requested(await this.toPixelMap(frame, width, height));
+        } catch (error) {
+          log(`requested frame failed ${describeError(error)}`);
+        }
+        frame.release();
+        return;
+      }
       const now = Date.now();
       const wanted = this.handler !== undefined && !this.busy && now - this.lastFrameAt >= this.minIntervalMs;
       if (wanted) {

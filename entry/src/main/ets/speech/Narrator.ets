@@ -62,7 +62,7 @@ export class Narrator {
     }
   }
 
-  announce(text: string): void {
+  announce(text: string, interrupt: boolean = false): void {
     if (this.screenReaderOpen()) {
       const info: accessibility.EventInfo = {
         type: 'announceForAccessibility',
@@ -75,12 +75,18 @@ export class Narrator {
       });
       return;
     }
-    this.speak(text);
+    this.speak(text, interrupt);
   }
 
-  speak(text: string): void {
-    if (!this.engine || this.speaking) {
+  speak(text: string, interrupt: boolean = false): void {
+    if (!this.engine) {
       return;
+    }
+    if (this.speaking) {
+      if (!interrupt) {
+        return;
+      }
+      this.engine.stop();
     }
     const extra: Record<string, Object> = {
       'queueMode': 0,

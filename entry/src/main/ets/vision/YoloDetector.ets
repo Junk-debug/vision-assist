@@ -4,6 +4,7 @@ import { common } from '@kit.AbilityKit';
 import { util } from '@kit.ArkTS';
 import { Detection, DetectionResult } from './DetectionTypes';
 import { log } from '../common/Logger';
+import { loadModel } from './ModelLoader';
 
 const MODEL_FILE: string = 'yolov8s_oiv7_640_sub.ms';
 const CLASSES_FILE: string = 'classes.json';
@@ -11,7 +12,6 @@ const PAD_VALUE: number = 114 / 255;
 const NMS_IOU: number = 0.45;
 const MAX_DETECTIONS: number = 20;
 const BOX_CHANNELS: number = 4;
-const CPU_THREADS: number = 4;
 
 function overlap(a: Detection, b: Detection): number {
   const interW = Math.max(0, Math.min(a.x2, b.x2) - Math.max(a.x1, b.x1));
@@ -35,11 +35,7 @@ export class YoloDetector {
 
   async load(context: common.UIAbilityContext): Promise<void> {
     const start = Date.now();
-    const modelBytes = await context.resourceManager.getRawFileContent(MODEL_FILE);
-    const modelBuffer = modelBytes.buffer.slice(modelBytes.byteOffset, modelBytes.byteOffset + modelBytes.byteLength) as ArrayBuffer;
-    const cpu: mindSporeLite.CpuDevice = { threadNum: CPU_THREADS };
-    const modelContext: mindSporeLite.Context = { target: ['cpu'], cpu: cpu };
-    this.model = await mindSporeLite.loadModelFromBuffer(modelBuffer, modelContext);
+    this.model = await loadModel(context, MODEL_FILE);
     const input = this.model.getInputs()[0];
     this.channelsFirst = input.shape[1] === 3;
     this.inputSize = this.channelsFirst ? input.shape[2] : input.shape[1];
