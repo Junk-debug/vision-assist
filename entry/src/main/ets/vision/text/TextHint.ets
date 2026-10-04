@@ -44,11 +44,7 @@ export function planDescription(scene: string, text: string | undefined, maxWord
   return new DescribePlan(sentence, [sentence, ...splitIntoChunks(text ?? '')]);
 }
 
-export function liveTextPhrase(text: string, centerX: number, maxWords: number = TEXT_HINT_MAX_WORDS): string {
-  const trimmed = normalizeText(text);
-  if (trimmed === '') {
-    return '';
-  }
+export function liveTextPhrase(centerX: number): string {
   const position = centerX < 0.35 ? Messages.ON_THE_LEFT : (centerX > 0.65 ? Messages.ON_THE_RIGHT : Messages.AHEAD);
-  return Messages.textLive(position, trimmed, trimmed.split(' ').length <= maxWords);
+  return Messages.textLive(position);
 }

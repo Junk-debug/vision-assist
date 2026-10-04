@@ -12,11 +12,13 @@ import { colorResolverFor } from '../vision/ObjectColor';
 import { describeWithText, liveTextPhrase, normalizeText, planDescription } from '../vision/text/TextHint';
 import { SystemTimer, withTimeout } from '../vision/text/EngineRunner';
 
+const LIVE_TEXT_GONE_CHECKS: number = 2;
+
 export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
   readonly id: string = 'describe';
   readonly continuous: boolean = false;
   private readonly services: FeatureServices;
-  private lastLiveText: string = '';
+  private textMisses: number = 0;
   private readonly light: LightMeter = new LightMeter();
   private lastBrightness: Brightness | undefined = undefined;
   private readonly tracker: LiveSceneTracker = new LiveSceneTracker();
@@ -73,7 +75,7 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
   async startLive(): Promise<void> {
     this.tracker.reset();
     this.lastBrightness = undefined;
-    this.lastLiveText = '';
+    this.textMisses = 0;
     this.light.start();
     this.lastTextCheckAt = 0;
     this.textVisible = false;
@@ -181,18 +183,19 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
     } catch (error) {
       log(`live text skipped ${describeError(error)}`);
     }
-    const found = text !== '';
-    const changed = found && text !== this.lastLiveText;
-    this.textVisible = found;
-    if (!found) {
-      this.lastLiveText = '';
+    if (text === '') {
+      this.textMisses++;
+      if (this.textMisses >= LIVE_TEXT_GONE_CHECKS) {
+        this.textVisible = false;
+      }
       return '';
     }
-    if (!changed) {
+    this.textMisses = 0;
+    if (this.textVisible) {
       return '';
     }
-    this.lastLiveText = text;
-    return liveTextPhrase(text, centerX);
+    this.textVisible = true;
+    return liveTextPhrase(centerX);
   }
 
 

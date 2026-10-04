@@ -190,9 +190,9 @@ export class Messages {
     return `New: ${phrases.join(', ')}.`;
   }
 
-  static textLive(position: string, text: string, short: boolean): string {
+  static textLive(position: string): string {
     const where = position === Messages.AHEAD ? 'Text ahead' : `Text ${position}`;
-    return short ? `${where}: ${text}.` : `${where}. ${Messages.TEXT_LONG_LIVE}`;
+    return `${where}. ${Messages.TEXT_LONG_LIVE}`;
   }
 
   static textAheadShort(text: string): string {
