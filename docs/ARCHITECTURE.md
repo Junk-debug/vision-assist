@@ -51,7 +51,7 @@ FrameNormalizer      crop black borders, rotate upright (per camera position),
    v
 +--------------------------+-----------------------------+
 | YoloDetector             | TextReader                  |
-| letterbox 640x640        | first ready recognizer:     |
+| letterbox 640x640        | first ready engine, timed:  |
 | MindSpore Lite predict   |   system (Core Vision Kit)  |
 | decode + class-wise NMS  |   on-device (PaddleOCR)     |
 +------------+-------------+--------------+--------------+
@@ -99,7 +99,23 @@ A single phone camera cannot measure absolute distance, so guidance uses two ima
 1. `SystemTextRecognizer`: Core Vision Kit `textRecognition`. `prepare()` calls `textRecognition.init()`.
 2. `PaddleTextRecognizer`: PP-OCRv4 mobile text detector and English recognizer converted to MindSpore Lite (`ocr_det.ms`, `ocr_rec.ms`, `ocr_dict.txt`), with DB post-processing (`DbPostProcessor.ets`), strip splitting for long lines and greedy CTC decoding (`CtcDecoder.ets`) written in ArkTS.
 
-Both are prepared in parallel at start-up. `read()` uses the first recognizer that reports ready; if it throws, the next one is tried. The choice depends only on what the device can do at runtime. There is no "is this an emulator" check anywhere in the code. The engine name (`system` or `on-device`) and its time are shown in the timing line, so the jury can see which one ran.
+Both are prepared in parallel at start-up. The choice depends only on what the device can do at runtime. There is no "is this an emulator" check anywhere in the code. The engine name (`system` or `on-device`) and its time are shown in the timing line, so the jury can see which one ran.
+
+Engine selection is split into a pure policy and a runner:
+
+- `EnginePolicy.ets` (no I/O) keeps a state per engine: `pending`, `ready`, `unavailable` or `disabled`, the count of consecutive failures and whether a call is still running. `order()` returns the ready, idle engines in registration order, so the system engine is preferred whenever it is ready.
+- `EngineRunner.ets` runs `prepare()` and `recognize()` under per-engine timeouts (`withTimeout` with an injectable `Timer`) and reports the outcome to the policy. `TextReader` is the runner for `PixelMap` frames with the system timer and the app logger.
+- Limits are in `TextEngineConfig.ets`: system prepare 6 s and recognize 2.5 s, on-device prepare 20 s and recognize 15 s, and an engine is disabled after 2 consecutive failures or timeouts.
+
+Rules:
+
+1. Reads never wait for a prepare. An engine is used as soon as it is ready; a slow engine does not block one that is already ready. If the system engine becomes ready later (also after its prepare timed out), the next read uses it.
+2. A recognize that fails or times out falls through to the next engine in the same read, so a hanging system engine costs at most its recognize timeout. While a timed-out call is still running, that engine is skipped.
+3. After 2 consecutive failures the engine is disabled for the rest of the session (log line `text engine system disabled for this session after 2 failures`). A success resets the count. The last engine still in play is never disabled, so reading keeps being tried.
+4. If no engine produces a result, `read()` returns `undefined` (log line `text read failed: no engine produced a result`) and the feature says "Text could not be read.". If no engine is ready, `isAvailable()` is false and the feature says "Text reading is not available on this device yet.".
+5. The engine actually used is logged when it changes (`text engine in use: on-device`) and is returned in `TextReadResult.engine`.
+
+Unit tests with fake engines are in `entry/src/test/TextEngines.test.ets`.
 
 ## Model pipeline
 
@@ -146,7 +162,7 @@ Rebuild steps for the detector are in `tools/model/README.md`.
 | Camera permission denied or camera fails to start | Status and announcement "The camera could not be started." |
 | Model file fails to load | Detector features say "The recognition model could not be loaded." instead of crashing |
 | No OCR engine ready | "Text reading is not available on this device yet." |
-| OCR engine throws | Next engine is tried; if none succeeds, "Text could not be read." |
+| OCR engine throws or times out | Next engine is tried in the same read; after 2 consecutive failures the engine is disabled for the session; if none succeeds, "Text could not be read." |
 | No text in the frame | "No text found. Move closer and try again." |
 | Light sensor missing, silent for 1.5 s, or reading near 0 lux while the camera sees a bright frame | Falls back to the camera brightness estimate |
 | Vibrator fails | Error is logged, guidance continues by speech |
