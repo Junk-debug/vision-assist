@@ -50,6 +50,13 @@ export class Messages {
   static readonly DESCRIBE_STARTED: string = 'Describing started';
   static readonly DESCRIBE_STOPPED: string = 'Describing stopped';
   static readonly NOTHING_RECOGNISED: string = 'Nothing recognised. Point the phone at objects in good light.';
+  static readonly NOTHING_TO_DESCRIBE: string = 'Nothing recognised. Try pointing at a table or a door.';
+  static readonly LIVE_DESCRIPTION: string = 'Live description';
+  static readonly STOP_LIVE_DESCRIPTION: string = 'Stop live description';
+  static readonly LIVE_DESCRIPTION_HINT: string = 'Keeps watching and announces only what changes';
+  static readonly LIVE_STARTED: string = 'Live description on. Only changes are announced.';
+  static readonly LIVE_STOPPED: string = 'Live description off';
+  static readonly LIVE_WATCHING: string = 'Live description on. Watching for changes.';
   static readonly SEARCH_STOPPED: string = 'Search stopped';
   static readonly SEARCHING_TURN_SLOWLY: string = 'Searching. Turn slowly.';
 
@@ -58,6 +65,8 @@ export class Messages {
   static readonly TILT_UP: string = 'tilt up';
   static readonly TILT_DOWN: string = 'tilt down';
   static readonly MOVE_CLOSER: string = 'move closer';
+  static readonly HOLD_STEADY: string = 'Hold steady.';
+  static readonly MOVE_CLOSER_SLOWLY: string = 'Move the phone closer slowly.';
   static readonly ON_THE_LEFT: string = 'on the left';
   static readonly ON_THE_RIGHT: string = 'on the right';
   static readonly AHEAD: string = 'ahead';
@@ -141,6 +150,42 @@ export class Messages {
 
   static arrived(name: string): string {
     return `${name} is right in front of you.`;
+  }
+
+  static sentence(text: string): string {
+    if (text === '') {
+      return '';
+    }
+    const capital = `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+    return capital.endsWith('.') ? capital : `${capital}.`;
+  }
+
+  static searchingTurnSlowly(name: string): string {
+    return `Searching for ${name}. Turn slowly.`;
+  }
+
+  static inView(name: string, position: string): string {
+    return Messages.sentence(`${name} in view, ${position}`);
+  }
+
+  static lostTarget(name: string): string {
+    return `Lost ${name}. Move back slowly.`;
+  }
+
+  static withinReach(name: string): string {
+    return Messages.sentence(`${name} is right in front of you, within reach`);
+  }
+
+  static sceneSnapshot(phrases: string[]): string {
+    return phrases.map((phrase: string) => Messages.sentence(phrase)).join(' ');
+  }
+
+  static sceneNew(phrases: string[]): string {
+    return `New: ${phrases.join(', ')}.`;
+  }
+
+  static sceneGone(labels: string[]): string {
+    return Messages.sentence(`${labels.join(' and ')} gone`);
   }
 
   static objectCount(label: string, count: number): string {

@@ -1,8 +1,7 @@
 import { image } from '@kit.ImageKit';
 import { Feature, FeatureServices } from './Feature';
-import { computeGuidance } from './FindGuidance';
 import { GuidanceCoach } from './GuidanceCoach';
-import { WORD_FRAME_INTERVAL_MS, WORD_FULL_SIZE_SIDE, WORD_HOLD_MS } from '../common/Config';
+import { FIND_WORD_TUNING, WORD_FRAME_INTERVAL_MS } from '../common/Config';
 import { log } from '../common/Logger';
 import { Messages } from '../common/Messages';
 import { normalizeFrame } from '../vision/FrameNormalizer';
@@ -36,11 +35,10 @@ export class FindWordFeature implements Feature {
     this.running = true;
     this.coach = new GuidanceCoach(this.services, {
       name: this.target,
-      searchingStatus: Messages.wordSearchingStatus(this.target),
-      searchingSpeech: Messages.wordSearchingSpeech(this.target)
-    }, WORD_HOLD_MS);
+      spokenName: this.target.toLowerCase(),
+      searchingStatus: Messages.wordSearchingStatus(this.target)
+    }, FIND_WORD_TUNING);
     this.coach.start(Date.now());
-    this.services.setStatus(Messages.wordStatus(this.target));
     this.services.camera.setFrameHandler((frame: image.PixelMap) => this.process(frame), WORD_FRAME_INTERVAL_MS);
   }
 
@@ -71,6 +69,6 @@ export class FindWordFeature implements Feature {
     log(`word search ${this.target}: ${result.words.length} words, ${result.elapsedMs} ms, ${result.engine}, ${outcome}`);
     this.services.setTiming(Messages.ocrTiming(result.engine, result.elapsedMs));
     this.services.overlay.drawWordMatch(result.words, match, content);
-    this.coach?.update(match === undefined ? undefined : computeGuidance(match, WORD_FULL_SIZE_SIDE), Date.now());
+    this.coach?.update(match, Date.now());
   }
 }

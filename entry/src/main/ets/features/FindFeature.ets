@@ -1,8 +1,7 @@
 import { image } from '@kit.ImageKit';
 import { Feature, FeatureServices } from './Feature';
-import { computeGuidance } from './FindGuidance';
 import { GuidanceCoach } from './GuidanceCoach';
-import { FIND_FRAME_INTERVAL_MS, FIND_THRESHOLD } from '../common/Config';
+import { FIND_FRAME_INTERVAL_MS, FIND_OBJECT_TUNING, FIND_THRESHOLD } from '../common/Config';
 import { Messages } from '../common/Messages';
 import { Detection } from '../vision/DetectionTypes';
 import { normalizeFrame } from '../vision/FrameNormalizer';
@@ -35,11 +34,10 @@ export class FindFeature implements Feature {
     this.running = true;
     this.coach = new GuidanceCoach(this.services, {
       name: this.target,
-      searchingStatus: Messages.searchingFor(this.target),
-      searchingSpeech: Messages.SEARCHING_TURN_SLOWLY
-    }, 0);
+      spokenName: this.target.toLowerCase(),
+      searchingStatus: Messages.searchingFor(this.target)
+    }, FIND_OBJECT_TUNING);
     this.coach.start(Date.now());
-    this.services.setStatus(Messages.findStatus(this.target));
     this.services.camera.setFrameHandler((frame: image.PixelMap) => this.process(frame), FIND_FRAME_INTERVAL_MS);
   }
 
@@ -61,7 +59,7 @@ export class FindFeature implements Feature {
     }
     this.services.overlay.drawDetections(result.detections, content, this.target);
     const match = this.bestMatch(result.detections);
-    this.coach?.update(match === undefined ? undefined : computeGuidance(match), Date.now());
+    this.coach?.update(match, Date.now());
   }
 
   private bestMatch(detections: Detection[]): Detection | undefined {

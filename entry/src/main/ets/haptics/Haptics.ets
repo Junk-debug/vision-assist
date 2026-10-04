@@ -27,6 +27,18 @@ export class Haptics {
     this.play(HapticCue.ARRIVED);
   }
 
+  searchTick(): void {
+    this.play(HapticCue.SEARCH_TICK);
+  }
+
+  acquired(): void {
+    this.play(HapticCue.ACQUIRED);
+  }
+
+  lost(): void {
+    this.play(HapticCue.LOST);
+  }
+
   stop(): void {
     this.clearTimers();
     try {

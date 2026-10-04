@@ -29,6 +29,20 @@ export default function messagesTest() {
       expect(Messages.colder('')).assertEqual('Colder.');
       expect(Messages.arrived('Door')).assertEqual('Door is right in front of you.');
     });
+    it('buildsFindStateSentences', 0, () => {
+      expect(Messages.sentence('turn left')).assertEqual('Turn left.');
+      expect(Messages.sentence('')).assertEqual('');
+      expect(Messages.searchingTurnSlowly('bottle')).assertEqual('Searching for bottle. Turn slowly.');
+      expect(Messages.inView('bottle', Messages.ON_THE_LEFT)).assertEqual('Bottle in view, on the left.');
+      expect(Messages.lostTarget('bottle')).assertEqual('Lost bottle. Move back slowly.');
+      expect(Messages.withinReach('bottle')).assertEqual('Bottle is right in front of you, within reach.');
+    });
+    it('buildsDescribeSentences', 0, () => {
+      expect(Messages.sceneSnapshot(['bottle ahead', 'chair on the left'])).assertEqual('Bottle ahead. Chair on the left.');
+      expect(Messages.sceneNew(['person on the right'])).assertEqual('New: person on the right.');
+      expect(Messages.sceneGone(['bottle'])).assertEqual('Bottle gone.');
+      expect(Messages.sceneGone(['bottle', 'cup'])).assertEqual('Bottle and cup gone.');
+    });
     it('roundsLuxPerLightLevel', 0, () => {
       expect(Messages.lightFromLux(LightLevel.DARK, 1.4)).assertEqual('It is dark. The light is off. About 1 lux.');
       expect(Messages.lightFromLux(LightLevel.NORMAL, 249.6)).assertEqual('The light is on. Normal indoor lighting. About 250 lux.');
@@ -57,7 +71,7 @@ export default function messagesTest() {
         Messages.CAMERA_SWITCH_FAILED, Messages.MODEL_LOAD_FAILED, Messages.MODEL_LOADING, Messages.TEXT_READER_UNAVAILABLE,
         Messages.TEXT_READ_FAILED, Messages.NO_TEXT_FOUND, Messages.COLOR_FAILED, Messages.LIGHT_FAILED,
         Messages.PHOTO_OPEN_FAILED, Messages.PICKER_OPEN_FAILED, Messages.NOTHING_IN_PHOTO, Messages.NO_TEXT_IN_PHOTO,
-        Messages.NOTHING_RECOGNISED];
+        Messages.NOTHING_RECOGNISED, Messages.NOTHING_TO_DESCRIBE];
       for (const failure of failures) {
         const sentences = failure.split('. ').filter((part: string) => part.trim().length > 0);
         expect(sentences.length >= 2).assertTrue();

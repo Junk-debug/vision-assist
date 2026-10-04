@@ -20,6 +20,12 @@ export interface PhotoAnalyzer {
   analyzePhoto(photo: image.PixelMap, content: ContentRect): Promise<void>;
 }
 
+export interface LiveMode {
+  isLive(): boolean;
+  startLive(): Promise<void>;
+  stopLive(): void;
+}
+
 export class FeatureServices {
   readonly camera: FrameSource;
   readonly detector: YoloDetector;

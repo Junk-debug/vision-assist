@@ -1,6 +1,7 @@
 import localUnitTest from './LocalUnit.test';
 import colorNamerTest from './ColorNamer.test';
 import findGuidanceTest from './FindGuidance.test';
+import findStateMachineTest from './FindStateMachine.test';
 import sceneTrackerTest from './SceneTracker.test';
 import wordMatcherTest from './WordMatcher.test';
 import messagesTest from './Messages.test';
@@ -16,6 +17,7 @@ export default function testsuite() {
   localUnitTest();
   wordMatcherTest();
   findGuidanceTest();
+  findStateMachineTest();
   colorNamerTest();
   sceneTrackerTest();
   messagesTest();

@@ -29,6 +29,7 @@ export struct FeaturePage {
   @State status: string = '';
   @State detail: string = '';
   @State running: boolean = false;
+  @State liveOn: boolean = false;
   @State busy: boolean = false;
   @State target: string = '';
   @State front: boolean = false;
@@ -92,6 +93,10 @@ export struct FeaturePage {
 
   private photoMode(): boolean {
     return this.photoUri !== '';
+  }
+
+  private showLive(): boolean {
+    return this.binding?.live !== undefined && !this.needsTarget() && !this.photoMode() && !this.permissionDenied;
   }
 
   private showSwitch(): boolean {
@@ -176,6 +181,7 @@ export struct FeaturePage {
   }
 
   private stopFeature(announce: boolean = false): void {
+    this.stopLive(false);
     if (this.binding !== undefined && this.running) {
       this.running = false;
       this.binding.feature.stop();
@@ -221,6 +227,40 @@ export struct FeaturePage {
     this.busy = true;
     await this.binding.feature.start();
     this.busy = false;
+  }
+
+  private async toggleLive(): Promise<void> {
+    const live = this.binding?.live;
+    if (live === undefined) {
+      return;
+    }
+    if (this.liveOn) {
+      this.stopLive(true);
+      return;
+    }
+    if (!this.cameraOpen) {
+      this.report(Messages.CAMERA_NOT_READY);
+      return;
+    }
+    if (this.info.needsDetector && !appServices.detector.isReady()) {
+      this.report(Messages.MODEL_LOADING);
+      return;
+    }
+    this.liveOn = true;
+    await live.startLive();
+    appServices.narrator.announce(Messages.LIVE_STARTED);
+  }
+
+  private stopLive(announce: boolean): void {
+    if (!this.liveOn) {
+      return;
+    }
+    this.liveOn = false;
+    this.binding?.live?.stopLive();
+    if (announce) {
+      this.status = Messages.LIVE_STOPPED;
+      appServices.narrator.announce(Messages.LIVE_STOPPED);
+    }
   }
 
   private async allowCamera(): Promise<void> {
@@ -382,6 +422,9 @@ export struct FeaturePage {
 
   private focusChain(): string[] {
     const chain: string[] = [ElementIds.FEATURE_TITLE, ElementIds.FEATURE_STATUS, ElementIds.FEATURE_PRIMARY];
+    if (this.showLive()) {
+      chain.push(ElementIds.FEATURE_LIVE);
+    }
     if (this.resultText !== '') {
       chain.push(ElementIds.FEATURE_FULL_TEXT);
     }
@@ -453,6 +496,18 @@ export struct FeaturePage {
           this.onPrimary();
         }
       })
+      if (this.showLive()) {
+        BigButton({
+          label: this.liveOn ? Messages.STOP_LIVE_DESCRIPTION : Messages.LIVE_DESCRIPTION,
+          hint: Messages.LIVE_DESCRIPTION_HINT,
+          tone: this.liveOn ? ButtonTone.STOP : ButtonTone.SECONDARY,
+          elementId: ElementIds.FEATURE_LIVE,
+          nextFocusId: this.nextOf(ElementIds.FEATURE_LIVE),
+          onTap: () => {
+            this.toggleLive();
+          }
+        })
+      }
       if (this.resultText !== '') {
         BigButton({
           label: Messages.SHOW_FULL_TEXT,

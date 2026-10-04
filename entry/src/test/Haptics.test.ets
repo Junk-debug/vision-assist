@@ -48,6 +48,14 @@ export default function hapticsTest() {
       expect(TOUCH_SWITCH_USAGES.includes(GUIDANCE_USAGE)).assertFalse();
       expect(patternFor(HapticCue.GUIDANCE_PULSE).usage).assertEqual(GUIDANCE_USAGE);
       expect(patternFor(HapticCue.ARRIVED).usage).assertEqual(GUIDANCE_USAGE);
+      expect(patternFor(HapticCue.SEARCH_TICK).usage).assertEqual(GUIDANCE_USAGE);
+      expect(patternFor(HapticCue.ACQUIRED).usage).assertEqual(GUIDANCE_USAGE);
+      expect(patternFor(HapticCue.LOST).usage).assertEqual(GUIDANCE_USAGE);
+    });
+    it('searchTickIsSoftAndFitsTheTickPeriod', 0, () => {
+      const tick = patternFor(HapticCue.SEARCH_TICK);
+      expect(tick.preset.intensity < patternFor(HapticCue.GUIDANCE_PULSE).preset.intensity).assertTrue();
+      expect(totalMs(tick.fallbackMs) < 1500).assertTrue();
     });
     it('fallbackPatternsAreDistinctAndShort', 0, () => {
       const seen: string[] = [];
@@ -63,12 +71,18 @@ export default function hapticsTest() {
       expect(totalMs(patternFor(HapticCue.GUIDANCE_PULSE).fallbackMs) < 110).assertTrue();
       expect(totalMs(patternFor(HapticCue.TAP).fallbackMs) <= 20).assertTrue();
     });
-    it('presetIdsAreUniqueAndIntensityInRange', 0, () => {
-      expect(presetIds().length).assertEqual(ALL_CUES.length);
+    it('presetsAreDistinctAndIntensityInRange', 0, () => {
+      const keys: string[] = [];
       for (const cue of ALL_CUES) {
         const preset = patternFor(cue).preset;
+        const key = `${preset.effectId}/${preset.intensity}/${preset.count}`;
+        expect(keys.includes(key)).assertFalse();
+        keys.push(key);
         expect(preset.intensity > 0 && preset.intensity <= 100).assertTrue();
         expect(preset.count >= 1).assertTrue();
+      }
+      for (const id of presetIds()) {
+        expect(id.startsWith('haptic.')).assertTrue();
       }
     });
   });

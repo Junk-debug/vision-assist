@@ -1,33 +1,86 @@
 import { Detection } from './DetectionTypes';
+import {
+  DESCRIBE_MAX_OBJECTS,
+  DESCRIBE_MIN_RELEVANCE,
+  LIVE_APPEAR_FRAMES,
+  LIVE_DISAPPEAR_FRAMES,
+  LIVE_MAX_NEW_PER_SENTENCE,
+  LIVE_SPEECH_GAP_MS
+} from '../common/Config';
 import { Messages } from '../common/Messages';
 
-const APPEAR_FRAMES: number = 2;
-const DISAPPEAR_FRAMES: number = 4;
-const MIN_SPEECH_GAP_MS: number = 2500;
-const MAX_ANNOUNCED_OBJECTS: number = 4;
 const LEFT_LIMIT: number = 0.35;
 const RIGHT_LIMIT: number = 0.65;
+const CENTER_BONUS: number = 0.4;
 const PERSON_LABEL: string = 'person';
 const WHOLE_PERSON_LABELS: string[] = ['person', 'man', 'woman', 'boy', 'girl'];
 const FACE_LABEL: string = 'human face';
-const SILENT_LABELS: string[] = ['clothing', 'footwear', 'fashion accessory'];
+const SILENT_LABELS: string[] = [
+  'clothing', 'footwear', 'fashion accessory', 'jeans', 'trousers', 'shirt', 'dress', 'jacket', 'coat', 'scarf', 'tie',
+  'belt', 'glove', 'earrings', 'necklace', 'human body', 'human head', 'human arm', 'human hand', 'human leg',
+  'human foot', 'human eye', 'human ear', 'human nose', 'human mouth', 'human hair', 'human beard'
+];
+
+export interface SceneGroup {
+  label: string;
+  count: number;
+  best: Detection;
+  relevance: number;
+}
 
 interface Track {
   streak: number;
   absent: number;
-  best: Detection;
+  confirmed: boolean;
+  group: SceneGroup;
 }
 
-interface Group {
-  count: number;
-  best: Detection;
+export interface LiveSceneConfig {
+  appearFrames: number;
+  disappearFrames: number;
+  speechGapMs: number;
+  maxNewPerSentence: number;
+  minRelevance: number;
+  maxObjects: number;
 }
 
-function groupForSpeech(detections: Detection[]): Map<string, Group> {
-  const groups: Map<string, Group> = new Map();
+export const DEFAULT_LIVE_CONFIG: LiveSceneConfig = {
+  appearFrames: LIVE_APPEAR_FRAMES,
+  disappearFrames: LIVE_DISAPPEAR_FRAMES,
+  speechGapMs: LIVE_SPEECH_GAP_MS,
+  maxNewPerSentence: LIVE_MAX_NEW_PER_SENTENCE,
+  minRelevance: DESCRIBE_MIN_RELEVANCE,
+  maxObjects: DESCRIBE_MAX_OBJECTS
+};
+
+export function relevanceOf(detection: Detection): number {
+  const width = Math.max(0, detection.x2 - detection.x1);
+  const height = Math.max(0, detection.y2 - detection.y1);
+  const side = Math.sqrt(width * height);
+  const offCenter = Math.abs((detection.x1 + detection.x2) / 2 - 0.5) * 2;
+  const centered = 1 - Math.min(1, offCenter);
+  return side * detection.score * (1 - CENTER_BONUS + CENTER_BONUS * centered);
+}
+
+function add(groups: Map<string, SceneGroup>, label: string, detection: Detection): void {
+  const relevance = relevanceOf(detection);
+  const group = groups.get(label);
+  if (group === undefined) {
+    groups.set(label, { label: label, count: 1, best: detection, relevance: relevance });
+    return;
+  }
+  group.count++;
+  if (relevance > group.relevance) {
+    group.relevance = relevance;
+    group.best = detection;
+  }
+}
+
+export function groupScene(detections: Detection[]): SceneGroup[] {
+  const groups: Map<string, SceneGroup> = new Map();
   const wholePeople: Map<string, number> = new Map();
   let faces = 0;
-  let personBest: Detection | undefined = undefined;
+  let person: SceneGroup | undefined = undefined;
   for (const detection of detections) {
     const label = detection.label.toLowerCase();
     if (SILENT_LABELS.includes(label)) {
@@ -39,31 +92,29 @@ function groupForSpeech(detections: Detection[]): Map<string, Group> {
       } else {
         wholePeople.set(label, (wholePeople.get(label) ?? 0) + 1);
       }
-      if (personBest === undefined || detection.score > personBest.score) {
-        personBest = detection;
+      const relevance = relevanceOf(detection);
+      if (person === undefined || relevance > person.relevance) {
+        person = { label: PERSON_LABEL, count: 1, best: detection, relevance: relevance };
       }
       continue;
     }
-    const group = groups.get(label);
-    if (group === undefined) {
-      groups.set(label, { count: 1, best: detection });
-    } else {
-      group.count++;
-      if (detection.score > group.best.score) {
-        group.best = detection;
-      }
-    }
+    add(groups, label, detection);
   }
-  if (personBest !== undefined) {
-    const person = wholePeople.get(PERSON_LABEL) ?? 0;
+  const result: SceneGroup[] = [];
+  groups.forEach((group: SceneGroup) => {
+    result.push(group);
+  });
+  if (person !== undefined) {
     const gendered = (wholePeople.get('man') ?? 0) + (wholePeople.get('woman') ?? 0) +
       (wholePeople.get('boy') ?? 0) + (wholePeople.get('girl') ?? 0);
-    groups.set(PERSON_LABEL, { count: Math.max(1, person, gendered, faces), best: personBest });
+    person.count = Math.max(1, wholePeople.get(PERSON_LABEL) ?? 0, gendered, faces);
+    result.push(person);
   }
-  return groups;
+  result.sort((a: SceneGroup, b: SceneGroup) => b.relevance - a.relevance);
+  return result;
 }
 
-function positionOf(detection: Detection): string {
+export function positionOf(detection: Detection): string {
   const center = (detection.x1 + detection.x2) / 2;
   if (center < LEFT_LIMIT) {
     return Messages.ON_THE_LEFT;
@@ -74,84 +125,100 @@ function positionOf(detection: Detection): string {
   return Messages.AHEAD;
 }
 
-function sentenceFor(labels: string[], groups: Map<string, Group>): string {
-  const phrases: string[] = [];
-  for (const label of labels.slice(0, MAX_ANNOUNCED_OBJECTS)) {
-    const group = groups.get(label) as Group;
-    phrases.push(Messages.objectAt(label, group.count, positionOf(group.best)));
-  }
-  return phrases.join(', ');
+function phraseOf(group: SceneGroup): string {
+  return Messages.objectAt(group.label, group.count, positionOf(group.best));
+}
+
+export function relevantGroups(detections: Detection[], minRelevance: number = DESCRIBE_MIN_RELEVANCE,
+  maxObjects: number = DESCRIBE_MAX_OBJECTS): SceneGroup[] {
+  return groupScene(detections).filter((group: SceneGroup) => group.relevance >= minRelevance).slice(0, maxObjects);
 }
 
 export function describeScene(detections: Detection[]): string {
-  const groups = groupForSpeech(detections);
-  const labels: string[] = [];
-  groups.forEach((group: Group, label: string) => {
-    labels.push(label);
-  });
-  labels.sort((a: string, b: string) => (groups.get(b) as Group).best.score - (groups.get(a) as Group).best.score);
-  return sentenceFor(labels, groups);
+  const phrases = relevantGroups(detections).map((group: SceneGroup) => phraseOf(group));
+  return Messages.sceneSnapshot(phrases);
 }
 
-export class SceneTracker {
+export class LiveSceneTracker {
+  private readonly config: LiveSceneConfig;
   private tracks: Map<string, Track> = new Map();
-  private lastSignature: string = '';
-  private lastSpeechAt: number = 0;
+  private announced: string[] = [];
+  private lastSpeechAt: number = Number.NEGATIVE_INFINITY;
+
+  constructor(config: LiveSceneConfig = DEFAULT_LIVE_CONFIG) {
+    this.config = config;
+  }
 
   reset(): void {
     this.tracks.clear();
-    this.lastSignature = '';
-    this.lastSpeechAt = 0;
+    this.announced = [];
+    this.lastSpeechAt = Number.NEGATIVE_INFINITY;
   }
 
   update(detections: Detection[], now: number): string | undefined {
-    const groups = groupForSpeech(detections);
-    const present: Map<string, Detection> = new Map();
-    groups.forEach((group: Group, label: string) => {
-      present.set(label, group.best);
-    });
-    present.forEach((best: Detection, label: string) => {
-      const track = this.tracks.get(label);
+    this.observe(groupScene(detections));
+    if (now - this.lastSpeechAt < this.config.speechGapMs) {
+      return undefined;
+    }
+    const sentence = this.nextChange();
+    if (sentence !== undefined) {
+      this.lastSpeechAt = now;
+    }
+    return sentence;
+  }
+
+  private observe(groups: SceneGroup[]): void {
+    const seen: string[] = [];
+    for (const group of groups) {
+      seen.push(group.label);
+      const track = this.tracks.get(group.label);
       if (track === undefined) {
-        this.tracks.set(label, { streak: 1, absent: 0, best: best });
+        this.tracks.set(group.label, { streak: 1, absent: 0, confirmed: false, group: group });
       } else {
         track.streak++;
         track.absent = 0;
-        track.best = best;
+        track.group = group;
       }
-    });
-    this.tracks.forEach((track: Track, label: string) => {
-      if (!present.has(label)) {
-        track.absent++;
-        track.streak = 0;
-      }
-    });
+    }
     const stale: string[] = [];
     this.tracks.forEach((track: Track, label: string) => {
-      if (track.absent >= DISAPPEAR_FRAMES) {
-        stale.push(label);
+      if (!seen.includes(label)) {
+        track.absent++;
+        track.streak = 0;
+        if (track.absent >= this.config.disappearFrames || !track.confirmed) {
+          stale.push(label);
+        }
+      } else if (!track.confirmed && track.streak >= this.config.appearFrames &&
+        track.group.relevance >= this.config.minRelevance) {
+        track.confirmed = true;
       }
     });
     for (const label of stale) {
       this.tracks.delete(label);
     }
-    const active: string[] = [];
+  }
+
+  private nextChange(): string | undefined {
+    const added: SceneGroup[] = [];
     this.tracks.forEach((track: Track, label: string) => {
-      if (track.absent === 0 && track.streak >= APPEAR_FRAMES) {
-        active.push(label);
+      if (track.confirmed && track.absent === 0 && !this.announced.includes(label)) {
+        added.push(track.group);
       }
     });
-    active.sort((a: string, b: string) => (this.tracks.get(b) as Track).best.score - (this.tracks.get(a) as Track).best.score);
-    if (active.length === 0) {
-      this.lastSignature = '';
-      return undefined;
+    added.sort((a: SceneGroup, b: SceneGroup) => b.relevance - a.relevance);
+    const room = Math.max(0, this.config.maxObjects - this.announced.length);
+    const fresh = added.slice(0, Math.min(room, this.config.maxNewPerSentence));
+    if (fresh.length > 0) {
+      for (const group of fresh) {
+        this.announced.push(group.label);
+      }
+      return Messages.sceneNew(fresh.map((group: SceneGroup) => phraseOf(group)));
     }
-    const signature = active.slice().sort().join('|');
-    if (signature === this.lastSignature || now - this.lastSpeechAt < MIN_SPEECH_GAP_MS) {
-      return undefined;
+    const gone = this.announced.filter((label: string) => !this.tracks.has(label));
+    if (gone.length > 0) {
+      this.announced = this.announced.filter((label: string) => this.tracks.has(label));
+      return Messages.sceneGone(gone);
     }
-    this.lastSignature = signature;
-    this.lastSpeechAt = now;
-    return sentenceFor(active, groups);
+    return undefined;
   }
 }

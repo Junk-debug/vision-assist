@@ -3,7 +3,10 @@ export enum HapticCue {
   RESULT_READY,
   ERROR,
   GUIDANCE_PULSE,
-  ARRIVED
+  ARRIVED,
+  SEARCH_TICK,
+  ACQUIRED,
+  LOST
 }
 
 export type HapticUsage = 'touch' | 'notification';
@@ -64,8 +67,26 @@ const ARRIVED: HapticPattern = {
   fallbackMs: [120, 80, 120, 80, 200]
 };
 
+const SEARCH_TICK: HapticPattern = {
+  usage: GUIDANCE_USAGE,
+  preset: { effectId: 'haptic.effect.soft', intensity: 35, count: 2 },
+  fallbackMs: [10, 90, 10]
+};
+
+const ACQUIRED: HapticPattern = {
+  usage: GUIDANCE_USAGE,
+  preset: { effectId: 'haptic.effect.sharp', intensity: 100, count: 2 },
+  fallbackMs: [30, 50, 90]
+};
+
+const LOST: HapticPattern = {
+  usage: GUIDANCE_USAGE,
+  preset: { effectId: 'haptic.notice.warning', intensity: 80, count: 1 },
+  fallbackMs: [90, 50, 30]
+};
+
 export const ALL_CUES: HapticCue[] = [HapticCue.TAP, HapticCue.RESULT_READY, HapticCue.ERROR, HapticCue.GUIDANCE_PULSE,
-  HapticCue.ARRIVED];
+  HapticCue.ARRIVED, HapticCue.SEARCH_TICK, HapticCue.ACQUIRED, HapticCue.LOST];
 
 export function patternFor(cue: HapticCue): HapticPattern {
   switch (cue) {
@@ -77,6 +98,12 @@ export function patternFor(cue: HapticCue): HapticPattern {
       return ERROR;
     case HapticCue.GUIDANCE_PULSE:
       return GUIDANCE_PULSE;
+    case HapticCue.SEARCH_TICK:
+      return SEARCH_TICK;
+    case HapticCue.ACQUIRED:
+      return ACQUIRED;
+    case HapticCue.LOST:
+      return LOST;
     default:
       return ARRIVED;
   }

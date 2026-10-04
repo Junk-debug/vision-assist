@@ -1,6 +1,6 @@
 import { ColorFeature } from './ColorFeature';
 import { DescribeFeature } from './DescribeFeature';
-import { Feature, FeatureServices, PhotoAnalyzer } from './Feature';
+import { Feature, FeatureServices, LiveMode, PhotoAnalyzer } from './Feature';
 import { FindFeature } from './FindFeature';
 import { FindWordFeature } from './FindWordFeature';
 import { LightFeature } from './LightFeature';
@@ -10,6 +10,7 @@ export interface FeatureBinding {
   feature: Feature;
   setTarget: (target: string) => void;
   photo?: PhotoAnalyzer;
+  live?: LiveMode;
 }
 
 function plain(feature: Feature): FeatureBinding {
@@ -36,5 +37,5 @@ export function createFeature(id: string, services: FeatureServices): FeatureBin
     return plain(new ColorFeature(services));
   }
   const describe = new DescribeFeature(services);
-  return { feature: describe, setTarget: (target: string): void => {}, photo: describe };
+  return { feature: describe, setTarget: (target: string): void => {}, photo: describe, live: describe };
 }
