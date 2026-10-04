@@ -16,6 +16,8 @@ Built for the HackYeah 2026 Huawei challenge "Imagine What's Next" (Human-Centri
 | Find a word (typed or preset, spoken and haptic guidance) | Implemented; picker, typing and the OCR loop verified on the emulator, guidance on real printed text and vibration not verified |
 | Full text screen for Read text | Large, scrollable, selectable text, one screen reader stop per line, Read again |
 | Photo from the gallery (Describe, Read text) | System photo picker, no storage permission; the photo is decoded at most 2048 px on the long side |
+| Light check | Ambient light sensor, falling back to camera brightness when the sensor reads 0 lux in a bright scene (the emulator sensor always reports 0); verified on the emulator through the camera fallback |
+| Color check | Names the color in the middle of the frame (for example "brown", "light red"); verified on the emulator |
 
 ## Screens
 
@@ -75,7 +77,7 @@ Source layout (`entry/src/main/ets`):
 
 Camera: the switch button in the top bar changes between the back and the front camera. Each camera has its own frame rotation (`BACK_FRAME_ROTATION`, `FRONT_FRAME_ROTATION` in `common/Config.ets`), and the overlay is mirrored for the front camera because its preview is mirrored.
 
-Platform capabilities used: Camera Kit, MindSpore Lite Kit (on-device inference), Core Speech Kit (offline TTS), Accessibility Kit, Media Library Kit (photo picker), Image Kit (decoding).
+Platform capabilities used: Camera Kit (front and back camera), MindSpore Lite Kit (on-device inference), Core Vision Kit (system text recognition on devices that provide it), Core Speech Kit (offline TTS), Accessibility Kit, Sensor Service Kit (vibrator for guidance, ambient light sensor), Media Library Kit (photo picker), Image Kit (decoding).
 
 ## Accessibility
 
