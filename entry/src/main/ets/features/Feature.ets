@@ -1,5 +1,5 @@
 import { image } from '@kit.ImageKit';
-import { CameraSource } from '../camera/CameraSource';
+import { FrameSource } from '../camera/FrameSource';
 import { haptics } from '../haptics/Haptics';
 import { Narrator } from '../speech/Narrator';
 import { Overlay } from '../ui/Overlay';
@@ -21,7 +21,7 @@ export interface PhotoAnalyzer {
 }
 
 export class FeatureServices {
-  readonly camera: CameraSource;
+  readonly camera: FrameSource;
   readonly detector: YoloDetector;
   readonly narrator: Narrator;
   readonly overlay: Overlay;
@@ -30,7 +30,7 @@ export class FeatureServices {
   readonly setTiming: (text: string) => void;
   readonly setResultText: (text: string) => void;
 
-  constructor(camera: CameraSource, detector: YoloDetector, narrator: Narrator, overlay: Overlay,
+  constructor(camera: FrameSource, detector: YoloDetector, narrator: Narrator, overlay: Overlay,
     textReader: TextReader, setStatus: (text: string) => void, setTiming: (text: string) => void,
     setResultText: (text: string) => void) {
     this.camera = camera;

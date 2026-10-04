@@ -4,13 +4,13 @@ import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { BACK_FRAME_ROTATION, FRONT_FRAME_ROTATION, FRONT_PREVIEW_MIRRORED } from '../common/Config';
 import { describeError, log } from '../common/Logger';
+import { FrameGate } from './FrameGate';
+import { FrameHandler, FrameSource, PreviewListener } from './FrameSource';
 
 const RECEIVER_CAPACITY: number = 4;
 const BYTES_PER_PIXEL: number = 4;
 
-export type FrameHandler = (frame: image.PixelMap) => Promise<void>;
-
-export class CameraSource {
+export class CameraSource implements FrameSource {
   private manager?: camera.CameraManager;
   private input?: camera.CameraInput;
   private previewOutput?: camera.PreviewOutput;
@@ -18,9 +18,7 @@ export class CameraSource {
   private session?: camera.PhotoSession;
   private receiver?: image.ImageReceiver;
   private handler?: FrameHandler;
-  private busy: boolean = false;
-  private lastFrameAt: number = 0;
-  private minIntervalMs: number = 0;
+  private gate: FrameGate = new FrameGate();
   private active: boolean = false;
   private frameRequest?: (frame: image.PixelMap) => void;
   private position: camera.CameraPosition = camera.CameraPosition.CAMERA_POSITION_BACK;
@@ -29,7 +27,14 @@ export class CameraSource {
 
   setFrameHandler(handler: FrameHandler | undefined, minIntervalMs: number): void {
     this.handler = handler;
-    this.minIntervalMs = minIntervalMs;
+    this.gate.setInterval(minIntervalMs);
+  }
+
+  setPreviewListener(listener: PreviewListener | undefined): void {
+  }
+
+  previewOnSurface(): boolean {
+    return true;
   }
 
   start(context: common.UIAbilityContext, surfaceId: string): Promise<boolean> {
@@ -148,11 +153,7 @@ export class CameraSource {
         frame.release();
         return;
       }
-      const now = Date.now();
-      const wanted = this.handler !== undefined && !this.busy && now - this.lastFrameAt >= this.minIntervalMs;
-      if (wanted) {
-        this.busy = true;
-        this.lastFrameAt = now;
+      if (this.handler !== undefined && this.gate.tryTake(Date.now())) {
         try {
           const pixelMap = await this.toPixelMap(frame, width, height);
           await (this.handler as FrameHandler)(pixelMap);
@@ -160,7 +161,7 @@ export class CameraSource {
         } catch (error) {
           log(`frame handling failed ${describeError(error)}`);
         }
-        this.busy = false;
+        this.gate.release();
       }
       frame.release();
     }).catch((error: BusinessError) => {
