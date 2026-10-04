@@ -83,6 +83,10 @@ export class FindStateMachine {
     return this.state;
   }
 
+  acquiredLargerSide(): number {
+    return this.acquiredSide;
+  }
+
   start(now: number): FindStep {
     this.state = FindState.SEARCHING;
     this.hits = [];

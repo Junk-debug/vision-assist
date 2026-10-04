@@ -69,6 +69,6 @@ export class FindWordFeature implements Feature {
     log(`word search ${this.target}: ${result.words.length} words, ${result.elapsedMs} ms, ${result.engine}, ${outcome}`);
     this.services.setTiming(Messages.ocrTiming(result.engine, result.elapsedMs));
     this.services.overlay.drawWordMatch(result.words, match, content);
-    this.coach?.update(match, Date.now());
+    this.coach?.update(match, Date.now(), result.elapsedMs);
   }
 }
