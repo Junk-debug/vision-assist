@@ -1,5 +1,9 @@
 import { abilityAccessCtrl, common, Permissions } from '@kit.AbilityKit';
+import BuildProfile from 'BuildProfile';
+import { createFrameInjector } from 'entry/injection/FrameInjection';
 import { CameraSource } from '../camera/CameraSource';
+import { FrameInjector } from '../camera/FrameSource';
+import { FrameSourceSwitch } from '../camera/FrameSourceSwitch';
 import { describeError, log } from '../common/Logger';
 import { Narrator } from '../speech/Narrator';
 import { YoloDetector } from '../vision/YoloDetector';
@@ -9,8 +13,12 @@ import { TextReader } from '../vision/text/TextReader';
 
 const CAMERA_PERMISSION: Permissions = 'ohos.permission.CAMERA';
 
+function frameInjector(): FrameInjector | undefined {
+  return BuildProfile.DEBUG && BuildProfile.FRAME_INJECTION ? createFrameInjector() : undefined;
+}
+
 export class AppServices {
-  readonly camera: CameraSource = new CameraSource();
+  readonly camera: FrameSourceSwitch = new FrameSourceSwitch(new CameraSource(), frameInjector());
   readonly detector: YoloDetector = new YoloDetector();
   readonly narrator: Narrator = new Narrator();
   readonly textReader: TextReader = new TextReader();

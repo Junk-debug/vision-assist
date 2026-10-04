@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit';
+import { image } from '@kit.ImageKit';
 import { ElementIds } from '../accessibility/ElementIds';
 import { nextInChain } from '../accessibility/FocusChain';
 import { appServices } from '../app/AppServices';
@@ -36,6 +37,7 @@ export struct FeaturePage {
   @State photoUri: string = '';
   @State sheetShown: boolean = false;
   @State permissionDenied: boolean = false;
+  @State injectedFrame: image.PixelMap | undefined = undefined;
   private info: FeatureInfo = FEATURE_CATALOG[0];
   private canvas: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true));
   private sceneOverlay: Overlay = new Overlay(this.canvas);
@@ -75,6 +77,7 @@ export struct FeaturePage {
   aboutToDisappear(): void {
     this.stopFeature();
     this.closeCamera();
+    appServices.camera.setPreviewListener(undefined);
     appServices.narrator.announceScreen(Messages.FEATURE_LIST);
     appServices.narrator.screenReader.focus(ElementIds.tile(this.info.id), FOCUS_AFTER_TRANSITION_MS);
   }
@@ -124,6 +127,9 @@ export struct FeaturePage {
     }
     this.permissionDenied = false;
     await appServices.init(context);
+    appServices.camera.setPreviewListener((frame: image.PixelMap | undefined) => {
+      this.injectedFrame = frame;
+    });
     if (!await appServices.camera.start(context, this.surfaceId)) {
       this.cameraOpen = false;
       this.reportFailure(Messages.CAMERA_START_FAILED, Priority.URGENT);
@@ -144,11 +150,17 @@ export struct FeaturePage {
   private closeCamera(): void {
     this.cameraOpen = false;
     appServices.camera.stop();
+    this.injectedFrame = undefined;
   }
 
   private syncCamera(): void {
     this.front = appServices.camera.isFront();
     this.canSwitch = appServices.camera.canSwitch();
+    if (appServices.camera.previewOnSurface()) {
+      this.sceneOverlay.useCameraViewport();
+    } else {
+      this.sceneOverlay.useFullViewport();
+    }
     this.sceneOverlay.setStyle(this.info.accent, appServices.camera.previewMirrored());
   }
 
@@ -414,6 +426,7 @@ export struct FeaturePage {
             canvas: this.canvas,
             sceneOverlay: this.sceneOverlay,
             photoUri: this.photoUri,
+            injectedFrame: this.injectedFrame,
             onSurface: (surfaceId: string) => {
               this.onSurface(surfaceId);
             }

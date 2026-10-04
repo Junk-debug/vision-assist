@@ -1,3 +1,4 @@
+import { image } from '@kit.ImageKit';
 import { Overlay } from '../Overlay';
 import { Palette, Radius } from '../theme/Theme';
 
@@ -8,6 +9,7 @@ export struct CameraPreview {
   canvas: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true));
   sceneOverlay?: Overlay;
   @Prop photoUri: string = '';
+  @Prop injectedFrame: image.PixelMap | undefined = undefined;
   onSurface: (surfaceId: string) => void = (surfaceId: string) => {};
   private xController: XComponentController = new XComponentController();
 
@@ -37,6 +39,14 @@ export struct CameraPreview {
           .width('100%')
           .height('100%')
           .accessibilityLevel('no')
+        if (this.injectedFrame !== undefined) {
+          Image(this.injectedFrame)
+            .objectFit(ImageFit.Contain)
+            .width('100%')
+            .height('100%')
+            .backgroundColor(Palette.previewBackground)
+            .accessibilityLevel('no')
+        }
       }
       Canvas(this.canvas)
         .width('100%')

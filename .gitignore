@@ -21,3 +21,4 @@ msl/
 *.onnx
 *.pt
 entry/.test/
+!tools/debug/

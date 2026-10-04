@@ -1,6 +1,11 @@
 {
   "apiType": "stageMode",
   "buildOption": {
+    "arkOptions": {
+      "buildProfileFields": {
+        "FRAME_INJECTION": false
+      }
+    },
     "resOptions": {
       "copyCodeResource": {
         "enable": false
@@ -24,10 +29,31 @@
   ],
   "targets": [
     {
-      "name": "default"
+      "name": "default",
+      "source": {
+        "sourceRoots": ["./src/default"]
+      }
+    },
+    {
+      "name": "frames",
+      "source": {
+        "sourceRoots": ["./src/frames"]
+      },
+      "config": {
+        "buildOption": {
+          "arkOptions": {
+            "buildProfileFields": {
+              "FRAME_INJECTION": true
+            }
+          }
+        }
+      }
     },
     {
       "name": "ohosTest",
+      "source": {
+        "sourceRoots": ["./src/default"]
+      }
     }
   ]
 }

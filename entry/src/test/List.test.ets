@@ -9,6 +9,7 @@ import photoMathTest from './PhotoMath.test';
 import accessibilityTest from './Accessibility.test';
 import hapticsTest from './Haptics.test';
 import textEnginesTest from './TextEngines.test';
+import frameSourceTest from './FrameSource.test';
 
 export default function testsuite() {
   localUnitTest();
@@ -22,4 +23,5 @@ export default function testsuite() {
   accessibilityTest();
   hapticsTest();
   textEnginesTest();
+  frameSourceTest();
 }

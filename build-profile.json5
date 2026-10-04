@@ -6,6 +6,12 @@
         "targetSdkVersion": "6.1.1(24)",
         "compatibleSdkVersion": "6.0.0(20)",
         "runtimeOS": "HarmonyOS"
+      },
+      {
+        "name": "frames",
+        "targetSdkVersion": "6.1.1(24)",
+        "compatibleSdkVersion": "6.0.0(20)",
+        "runtimeOS": "HarmonyOS"
       }
     ],
     "buildModeSet": [
@@ -26,6 +32,12 @@
           "name": "default",
           "applyToProducts": [
             "default"
+          ]
+        },
+        {
+          "name": "frames",
+          "applyToProducts": [
+            "frames"
           ]
         }
       ]
