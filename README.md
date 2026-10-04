@@ -158,6 +158,11 @@ hvigor prints nothing on success; the per-test result is in `entry/.test/default
 
 ## Build and run
 
+### Prebuilt package
+
+[GitHub Releases](https://github.com/Junk-debug/vision-assist/releases) has `vision-assist-unsigned.hap`, a release build of the `default` product without a cloud key (fully on-device). HarmonyOS installs only signed packages and a signature is tied to the signer's devices, so sign it for your emulator or phone (DevEco Studio "Automatically generate signature" with a Huawei ID, or `hap-sign-tool.jar sign-app` with your own certificate and profile) and install it with `hdc install`. Building from source, below, signs it for you.
+
+
 1. Open this folder in DevEco Studio.
 2. Create signing material: File, Project Structure, Signing Configs, "Automatically generate signature" (needs a Huawei ID), or use the repository's offline path below.
 3. Start an emulator from DevEco Studio's Device Manager (not from the command line, see `docs/EMULATOR.md`).
