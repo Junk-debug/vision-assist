@@ -9,13 +9,14 @@ import { ContentRect, DetectionResult } from '../vision/DetectionTypes';
 import { describeScene, LiveSceneTracker } from '../vision/SceneTracker';
 import { Brightness, LightMeter } from '../vision/LightMeter';
 import { colorResolverFor } from '../vision/ObjectColor';
-import { describeWithText, normalizeText, planDescription } from '../vision/text/TextHint';
+import { describeWithText, liveTextPhrase, normalizeText, planDescription } from '../vision/text/TextHint';
 import { SystemTimer, withTimeout } from '../vision/text/EngineRunner';
 
 export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
   readonly id: string = 'describe';
   readonly continuous: boolean = false;
   private readonly services: FeatureServices;
+  private lastLiveText: string = '';
   private readonly light: LightMeter = new LightMeter();
   private lastBrightness: Brightness | undefined = undefined;
   private readonly tracker: LiveSceneTracker = new LiveSceneTracker();
@@ -72,6 +73,7 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
   async startLive(): Promise<void> {
     this.tracker.reset();
     this.lastBrightness = undefined;
+    this.lastLiveText = '';
     this.light.start();
     this.lastTextCheckAt = 0;
     this.textVisible = false;
@@ -135,9 +137,9 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
     if (change !== '') {
       sentence = sentence === undefined ? change : `${sentence} ${change}`;
     }
-    const appeared = await this.textAppeared(frame, now);
-    if (appeared) {
-      sentence = describeWithText(sentence ?? '', Messages.TEXT_AHEAD);
+    const textPhrase = await this.textAppeared(frame, now);
+    if (textPhrase !== '') {
+      sentence = describeWithText(sentence ?? '', textPhrase);
     }
     if (sentence !== undefined && this.live) {
       this.services.setStatus(sentence);
@@ -161,16 +163,38 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
     return brightness === Brightness.DARK ? Messages.LIGHT_TURNED_OFF : Messages.LIGHT_TURNED_ON;
   }
 
-  private async textAppeared(frame: image.PixelMap, now: number): Promise<boolean> {
+  private async textAppeared(frame: image.PixelMap, now: number): Promise<string> {
     if (now - this.lastTextCheckAt < LIVE_TEXT_INTERVAL_MS) {
-      return false;
+      return '';
     }
     this.lastTextCheckAt = now;
-    const found = (await this.recognisedText(frame)) !== '';
-    const appeared = found && !this.textVisible;
+    let text = '';
+    let centerX = 0.5;
+    try {
+      const result = await withTimeout(this.services.textReader.read(frame), DESCRIBE_TEXT_BUDGET_MS, this.timer,
+        'live text');
+      text = normalizeText(result?.text);
+      if (result !== undefined && result.lines.length > 0) {
+        const xs = result.lines.map((line) => (line.x1 + line.x2) / 2);
+        centerX = xs.reduce((a: number, b: number) => a + b, 0) / xs.length;
+      }
+    } catch (error) {
+      log(`live text skipped ${describeError(error)}`);
+    }
+    const found = text !== '';
+    const changed = found && text !== this.lastLiveText;
     this.textVisible = found;
-    return appeared;
+    if (!found) {
+      this.lastLiveText = '';
+      return '';
+    }
+    if (!changed) {
+      return '';
+    }
+    this.lastLiveText = text;
+    return liveTextPhrase(text, centerX);
   }
+
 
   private async recognisedText(frame: image.PixelMap): Promise<string> {
     try {

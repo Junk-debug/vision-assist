@@ -52,6 +52,7 @@ export class Messages {
   static readonly NOTHING_RECOGNISED: string = 'Nothing recognised. Point the phone at objects in good light.';
   static readonly NOTHING_TO_DESCRIBE: string = 'Nothing recognised. Try pointing at a table or a door.';
   static readonly TEXT_AHEAD: string = 'Text ahead.';
+  static readonly TEXT_LONG_LIVE: string = 'Hold still and press Describe now to read it.';
   static readonly TEXT_AHEAD_LONG: string = 'Text ahead. Reading it now.';
   static readonly LIVE_DESCRIPTION: string = 'Live description';
   static readonly STOP_LIVE_DESCRIPTION: string = 'Stop live description';
@@ -187,6 +188,11 @@ export class Messages {
 
   static sceneNew(phrases: string[]): string {
     return `New: ${phrases.join(', ')}.`;
+  }
+
+  static textLive(position: string, text: string, short: boolean): string {
+    const where = position === Messages.AHEAD ? 'Text ahead' : `Text ${position}`;
+    return short ? `${where}: ${text}.` : `${where}. ${Messages.TEXT_LONG_LIVE}`;
   }
 
   static textAheadShort(text: string): string {
