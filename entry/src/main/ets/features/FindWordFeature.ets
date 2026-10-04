@@ -3,7 +3,8 @@ import { Feature, FeatureServices } from './Feature';
 import { computeGuidance } from './FindGuidance';
 import { GuidanceCoach } from './GuidanceCoach';
 import { WORD_FRAME_INTERVAL_MS, WORD_FULL_SIZE_SIDE, WORD_HOLD_MS } from '../common/Config';
-import { describeError, log } from '../common/Logger';
+import { log } from '../common/Logger';
+import { Messages } from '../common/Messages';
 import { normalizeFrame } from '../vision/FrameNormalizer';
 import { findWord, WordMatch } from '../vision/text/WordMatcher';
 
@@ -23,17 +24,23 @@ export class FindWordFeature implements Feature {
     this.target = word.trim();
   }
 
+  startedMessage(): string {
+    return Messages.wordStarted(this.target);
+  }
+
+  stoppedMessage(): string {
+    return Messages.SEARCH_STOPPED;
+  }
+
   async start(): Promise<void> {
     this.running = true;
-    const spoken = this.target.toLowerCase();
     this.coach = new GuidanceCoach(this.services, {
       name: this.target,
-      searchingStatus: `Searching for ${this.target}.`,
-      searchingSpeech: `Searching for ${spoken}, move the phone slowly`
+      searchingStatus: Messages.wordSearchingStatus(this.target),
+      searchingSpeech: Messages.wordSearchingSpeech(this.target)
     }, WORD_HOLD_MS);
     this.coach.start(Date.now());
-    this.services.setStatus(`Looking for the word ${this.target}.`);
-    this.services.narrator.announce(`Looking for the word ${spoken}`, true);
+    this.services.setStatus(Messages.wordStatus(this.target));
     this.services.camera.setFrameHandler((frame: image.PixelMap) => this.process(frame), WORD_FRAME_INTERVAL_MS);
   }
 
@@ -42,8 +49,6 @@ export class FindWordFeature implements Feature {
     this.services.camera.setFrameHandler(undefined, 0);
     this.coach?.stop();
     this.services.overlay.clear();
-    this.services.setStatus('Stopped.');
-    this.services.narrator.announce('Search stopped', true);
   }
 
   private async process(frame: image.PixelMap): Promise<void> {
@@ -64,7 +69,7 @@ export class FindWordFeature implements Feature {
     const match: WordMatch | undefined = findWord(result.words, this.target);
     const outcome = match === undefined ? 'no match' : `matched ${match.text}`;
     log(`word search ${this.target}: ${result.words.length} words, ${result.elapsedMs} ms, ${result.engine}, ${outcome}`);
-    this.services.setTiming(`${result.engine} OCR ${result.elapsedMs} ms`);
+    this.services.setTiming(Messages.ocrTiming(result.engine, result.elapsedMs));
     this.services.overlay.drawWordMatch(result.words, match, content);
     this.coach?.update(match === undefined ? undefined : computeGuidance(match, WORD_FULL_SIZE_SIDE), Date.now());
   }

@@ -1,5 +1,6 @@
 import { Feature, FeatureServices } from './Feature';
 import { describeError, log } from '../common/Logger';
+import { Messages } from '../common/Messages';
 import { normalizeFrame } from '../vision/FrameNormalizer';
 import { nameColor } from '../vision/ColorNamer';
 
@@ -15,9 +16,17 @@ export class ColorFeature implements Feature {
     this.services = services;
   }
 
+  startedMessage(): string {
+    return '';
+  }
+
+  stoppedMessage(): string {
+    return '';
+  }
+
   async start(): Promise<void> {
     this.services.overlay.clear();
-    this.services.setStatus('Checking the color.');
+    this.services.setStatus(Messages.CHECKING_COLOR);
     try {
       const frame = await this.services.camera.nextFrame();
       const content = await normalizeFrame(frame, this.services.camera.frameRotation());
@@ -45,18 +54,13 @@ export class ColorFeature implements Feature {
       }
       const name = nameColor(red / count, green / count, blue / count);
       this.services.overlay.drawCenterMarker(content, MARKER_COLOR);
-      this.report(name);
+      this.services.report(name);
     } catch (error) {
       log(`color check failed ${describeError(error)}`);
-      this.report('The color could not be checked.');
+      this.services.report(Messages.COLOR_FAILED);
     }
   }
 
   stop(): void {
-  }
-
-  private report(message: string): void {
-    this.services.setStatus(message);
-    this.services.narrator.announce(message, true);
   }
 }

@@ -1,11 +1,17 @@
 import { textToSpeech } from '@kit.CoreSpeechKit';
-import { accessibility } from '@kit.AccessibilityKit';
-import { BusinessError } from '@kit.BasicServicesKit';
-import { bundleManager } from '@kit.AbilityKit';
+import { RateLimiter } from '../accessibility/RateLimiter';
+import { ScreenReader } from '../accessibility/ScreenReader';
+import { SCREEN_READER_BACKGROUND_GAP_MS } from '../common/Config';
 import { describeError, log } from '../common/Logger';
 
 const ENGINE_NAME: string = 'vision-assist';
 const SPEECH_RATE: number = 1.1;
+
+export enum Priority {
+  BACKGROUND,
+  RESULT,
+  URGENT
+}
 
 interface VoiceOption {
   language: string;
@@ -18,17 +24,14 @@ const VOICES: VoiceOption[] = [
 ];
 
 export class Narrator {
+  readonly screenReader: ScreenReader = new ScreenReader();
+  private readonly backgroundLimiter: RateLimiter = new RateLimiter(SCREEN_READER_BACKGROUND_GAP_MS);
   private engine?: textToSpeech.TextToSpeechEngine;
   private speaking: boolean = false;
   private voiceName: string = 'none';
-  private bundleName: string = '';
 
   async init(): Promise<void> {
-    try {
-      this.bundleName = (await bundleManager.getBundleInfoForSelf(bundleManager.BundleFlag.GET_BUNDLE_INFO_DEFAULT)).name;
-    } catch (error) {
-      log(`bundle name lookup failed ${describeError(error)}`);
-    }
+    await this.screenReader.init();
     for (const voice of VOICES) {
       const extra: Record<string, Object> = { 'style': 'interaction-broadcast', 'locate': 'CN', 'name': ENGINE_NAME };
       const params: textToSpeech.CreateEngineParams = { language: voice.language, person: voice.person, online: 1, extraParams: extra };
@@ -51,34 +54,36 @@ export class Narrator {
         }
       });
     }
-    log(`narrator ready, voice ${this.voiceName}, screen reader ${this.screenReaderOpen()}`);
+    log(`narrator ready, voice ${this.voiceName}, screen reader ${this.screenReader.isOn()}`);
   }
 
-  screenReaderOpen(): boolean {
-    try {
-      return accessibility.isScreenReaderOpenSync();
-    } catch (error) {
-      return false;
-    }
-  }
-
-  announce(text: string, interrupt: boolean = false): void {
-    if (this.screenReaderOpen()) {
-      const info: accessibility.EventInfo = {
-        type: 'announceForAccessibility',
-        bundleName: this.bundleName,
-        triggerAction: 'common',
-        textAnnouncedForAccessibility: text
-      };
-      accessibility.sendAccessibilityEvent(info).catch((error: BusinessError) => {
-        log(`announce failed ${describeError(error)}`);
-      });
+  announce(text: string, priority: Priority = Priority.RESULT): void {
+    if (text === '') {
       return;
     }
-    this.speak(text, interrupt);
+    if (this.screenReader.isOn()) {
+      if (priority === Priority.BACKGROUND && !this.backgroundLimiter.allow(Date.now())) {
+        return;
+      }
+      this.screenReader.announce(text, priority === Priority.URGENT);
+      return;
+    }
+    this.speak(text, priority !== Priority.BACKGROUND);
   }
 
-  speak(text: string, interrupt: boolean = false): void {
+  announceScreen(name: string): void {
+    if (!this.screenReader.isOn()) {
+      this.speak(name, true);
+    }
+  }
+
+  stopSpeaking(): void {
+    if (this.engine && this.speaking) {
+      this.engine.stop();
+    }
+  }
+
+  private speak(text: string, interrupt: boolean): void {
     if (!this.engine) {
       return;
     }

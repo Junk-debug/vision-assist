@@ -1,6 +1,8 @@
 import { FeatureServices } from './Feature';
 import { Guidance } from './FindGuidance';
+import { Messages } from '../common/Messages';
 import { Haptics } from '../haptics/Haptics';
+import { Priority } from '../speech/Narrator';
 
 const PULSE_DURATION_MS: number = 40;
 const ARRIVED_VIBRATION_MS: number = 600;
@@ -73,13 +75,13 @@ export class GuidanceCoach {
 
   private onGuidance(guidance: Guidance, now: number): void {
     const percent = Math.round(guidance.closeness * 100);
-    this.services.setStatus(`${this.texts.name}: ${percent}% close. ${guidance.direction}`);
+    this.services.setStatus(Messages.closeness(this.texts.name, percent, guidance.direction));
     if (guidance.arrived) {
       this.setPulse(0);
       if (!this.arrivedAnnounced) {
         this.arrivedAnnounced = true;
         this.haptics.pulse(ARRIVED_VIBRATION_MS);
-        this.services.narrator.announce(`${this.texts.name} is right in front of you.`, true);
+        this.services.narrator.announce(Messages.arrived(this.texts.name), Priority.URGENT);
         this.lastSpeechAt = now;
       }
       return;
@@ -89,9 +91,9 @@ export class GuidanceCoach {
     const trend = guidance.closeness - this.lastCloseness;
     let message = guidance.direction;
     if (trend > TREND_MARGIN) {
-      message = `Warmer. ${guidance.direction}`;
+      message = Messages.warmer(guidance.direction);
     } else if (trend < -TREND_MARGIN) {
-      message = `Colder. ${guidance.direction}`;
+      message = Messages.colder(guidance.direction);
     }
     this.lastCloseness = guidance.closeness;
     this.speak(message, now);
@@ -102,7 +104,7 @@ export class GuidanceCoach {
       return;
     }
     this.lastSpeechAt = now;
-    this.services.narrator.announce(message);
+    this.services.narrator.announce(message, Priority.BACKGROUND);
   }
 
   private setPulse(periodMs: number): void {

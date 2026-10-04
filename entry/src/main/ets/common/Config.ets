@@ -13,3 +13,6 @@ export const WORD_FRAME_INTERVAL_MS: number = 700;
 export const WORD_HOLD_MS: number = 1500;
 export const WORD_FULL_SIZE_SIDE: number = 0.25;
 export const WORD_TARGETS: string[] = ['EXIT', 'WC', 'PUSH', 'PULL', 'OPEN', 'CLOSED', 'PHARMACY', 'STOP'];
+export const SCREEN_READER_BACKGROUND_GAP_MS: number = 4000;
+export const FOCUS_AFTER_TRANSITION_MS: number = 400;
+export const PHOTO_MAX_SIDE: number = 2048;

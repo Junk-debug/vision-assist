@@ -2,6 +2,7 @@ import { image } from '@kit.ImageKit';
 import { sensor } from '@kit.SensorServiceKit';
 import { Feature, FeatureServices } from './Feature';
 import { describeError, log } from '../common/Logger';
+import { LightLevel, Messages } from '../common/Messages';
 import { normalizeFrame } from '../vision/FrameNormalizer';
 
 const SENSOR_TIMEOUT_MS: number = 1500;
@@ -17,33 +18,32 @@ const NORMAL_LUMA: number = 170;
 const SENSOR_CONFLICT_LUMA: number = 80;
 
 export function describeLux(lux: number): string {
-  const rounded = Math.round(lux);
   if (lux < DARK_LUX) {
-    return `It is dark. The light is off. About ${rounded} lux.`;
+    return Messages.lightFromLux(LightLevel.DARK, lux);
   }
   if (lux < DIM_LUX) {
-    return `It is dim. The light may be off. About ${rounded} lux.`;
+    return Messages.lightFromLux(LightLevel.DIM, lux);
   }
   if (lux < NORMAL_LUX) {
-    return `The light is on. Normal indoor lighting. About ${rounded} lux.`;
+    return Messages.lightFromLux(LightLevel.NORMAL, lux);
   }
   if (lux < BRIGHT_LUX) {
-    return `It is bright. About ${rounded} lux.`;
+    return Messages.lightFromLux(LightLevel.BRIGHT, lux);
   }
-  return `It is very bright, probably daylight. About ${rounded} lux.`;
+  return Messages.lightFromLux(LightLevel.DAYLIGHT, lux);
 }
 
 export function describeLuma(luma: number): string {
   if (luma < DARK_LUMA) {
-    return 'It looks dark. The light may be off.';
+    return Messages.LUMA_DARK;
   }
   if (luma < DIM_LUMA) {
-    return 'It looks dim.';
+    return Messages.LUMA_DIM;
   }
   if (luma < NORMAL_LUMA) {
-    return 'The light looks on. Normal lighting.';
+    return Messages.LUMA_NORMAL;
   }
-  return 'It looks very bright.';
+  return Messages.LUMA_BRIGHT;
 }
 
 export class LightFeature implements Feature {
@@ -55,9 +55,17 @@ export class LightFeature implements Feature {
     this.services = services;
   }
 
+  startedMessage(): string {
+    return '';
+  }
+
+  stoppedMessage(): string {
+    return '';
+  }
+
   async start(): Promise<void> {
     this.services.overlay.clear();
-    this.services.setStatus('Checking the light.');
+    this.services.setStatus(Messages.CHECKING_LIGHT);
     const lux = await this.readSensor();
     let luma: number | undefined = undefined;
     try {
@@ -70,20 +78,15 @@ export class LightFeature implements Feature {
     }
     const sensorLooksBroken = lux !== undefined && lux < DARK_LUX && luma !== undefined && luma > SENSOR_CONFLICT_LUMA;
     if (lux !== undefined && !sensorLooksBroken) {
-      this.report(describeLux(lux));
+      this.services.report(describeLux(lux));
     } else if (luma !== undefined) {
-      this.report(describeLuma(luma));
+      this.services.report(describeLuma(luma));
     } else {
-      this.report('The light could not be checked.');
+      this.services.report(Messages.LIGHT_FAILED);
     }
   }
 
   stop(): void {
-  }
-
-  private report(message: string): void {
-    this.services.setStatus(message);
-    this.services.narrator.announce(message, true);
   }
 
   private readSensor(): Promise<number | undefined> {

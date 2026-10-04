@@ -1,4 +1,5 @@
 import { Detection } from './DetectionTypes';
+import { Messages } from '../common/Messages';
 
 const APPEAR_FRAMES: number = 2;
 const DISAPPEAR_FRAMES: number = 4;
@@ -65,19 +66,31 @@ function groupForSpeech(detections: Detection[]): Map<string, Group> {
 function positionOf(detection: Detection): string {
   const center = (detection.x1 + detection.x2) / 2;
   if (center < LEFT_LIMIT) {
-    return 'on the left';
+    return Messages.ON_THE_LEFT;
   }
   if (center > RIGHT_LIMIT) {
-    return 'on the right';
+    return Messages.ON_THE_RIGHT;
   }
-  return 'ahead';
+  return Messages.AHEAD;
 }
 
-function plural(label: string, count: number): string {
-  if (count === 1) {
-    return label;
+function sentenceFor(labels: string[], groups: Map<string, Group>): string {
+  const phrases: string[] = [];
+  for (const label of labels.slice(0, MAX_ANNOUNCED_OBJECTS)) {
+    const group = groups.get(label) as Group;
+    phrases.push(Messages.objectAt(label, group.count, positionOf(group.best)));
   }
-  return label === 'person' ? `${count} people` : `${count} ${label}s`;
+  return phrases.join(', ');
+}
+
+export function describeScene(detections: Detection[]): string {
+  const groups = groupForSpeech(detections);
+  const labels: string[] = [];
+  groups.forEach((group: Group, label: string) => {
+    labels.push(label);
+  });
+  labels.sort((a: string, b: string) => (groups.get(b) as Group).best.score - (groups.get(a) as Group).best.score);
+  return sentenceFor(labels, groups);
 }
 
 export class SceneTracker {
@@ -139,11 +152,6 @@ export class SceneTracker {
     }
     this.lastSignature = signature;
     this.lastSpeechAt = now;
-    const phrases: string[] = [];
-    for (const label of active.slice(0, MAX_ANNOUNCED_OBJECTS)) {
-      const best = (this.tracks.get(label) as Track).best;
-      phrases.push(`${plural(label, (groups.get(label) as Group).count)} ${positionOf(best)}`);
-    }
-    return phrases.join(', ');
+    return sentenceFor(active, groups);
   }
 }

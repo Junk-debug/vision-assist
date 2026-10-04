@@ -3,6 +3,7 @@ import { Feature, FeatureServices } from './Feature';
 import { computeGuidance } from './FindGuidance';
 import { GuidanceCoach } from './GuidanceCoach';
 import { FIND_FRAME_INTERVAL_MS, FIND_THRESHOLD } from '../common/Config';
+import { Messages } from '../common/Messages';
 import { Detection } from '../vision/DetectionTypes';
 import { normalizeFrame } from '../vision/FrameNormalizer';
 
@@ -22,16 +23,23 @@ export class FindFeature implements Feature {
     this.target = label;
   }
 
+  startedMessage(): string {
+    return Messages.findStarted(this.target);
+  }
+
+  stoppedMessage(): string {
+    return Messages.SEARCH_STOPPED;
+  }
+
   async start(): Promise<void> {
     this.running = true;
     this.coach = new GuidanceCoach(this.services, {
       name: this.target,
-      searchingStatus: `Searching for ${this.target.toLowerCase()}.`,
-      searchingSpeech: 'Searching. Turn slowly.'
+      searchingStatus: Messages.searchingFor(this.target),
+      searchingSpeech: Messages.SEARCHING_TURN_SLOWLY
     }, 0);
     this.coach.start(Date.now());
-    this.services.setStatus(`Looking for ${this.target.toLowerCase()}.`);
-    this.services.narrator.announce(`Looking for ${this.target.toLowerCase()}. Move the phone slowly.`, true);
+    this.services.setStatus(Messages.findStatus(this.target));
     this.services.camera.setFrameHandler((frame: image.PixelMap) => this.process(frame), FIND_FRAME_INTERVAL_MS);
   }
 
@@ -40,8 +48,6 @@ export class FindFeature implements Feature {
     this.services.camera.setFrameHandler(undefined, 0);
     this.coach?.stop();
     this.services.overlay.clear();
-    this.services.setStatus('Stopped.');
-    this.services.narrator.announce('Search stopped', true);
   }
 
   private async process(frame: image.PixelMap): Promise<void> {

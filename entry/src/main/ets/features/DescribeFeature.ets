@@ -1,11 +1,13 @@
 import { image } from '@kit.ImageKit';
-import { Feature, FeatureServices } from './Feature';
+import { Feature, FeatureServices, PhotoAnalyzer } from './Feature';
 import { DETECTION_THRESHOLD, LIVE_FRAME_INTERVAL_MS } from '../common/Config';
+import { Messages } from '../common/Messages';
+import { Priority } from '../speech/Narrator';
 import { normalizeFrame } from '../vision/FrameNormalizer';
-import { DetectionResult } from '../vision/DetectionTypes';
-import { SceneTracker } from '../vision/SceneTracker';
+import { ContentRect, DetectionResult } from '../vision/DetectionTypes';
+import { describeScene, SceneTracker } from '../vision/SceneTracker';
 
-export class DescribeFeature implements Feature {
+export class DescribeFeature implements Feature, PhotoAnalyzer {
   readonly id: string = 'describe';
   readonly continuous: boolean = true;
   private readonly services: FeatureServices;
@@ -16,11 +18,18 @@ export class DescribeFeature implements Feature {
     this.services = services;
   }
 
+  startedMessage(): string {
+    return Messages.DESCRIBE_STARTED;
+  }
+
+  stoppedMessage(): string {
+    return Messages.DESCRIBE_STOPPED;
+  }
+
   async start(): Promise<void> {
     this.tracker.reset();
     this.running = true;
-    this.services.setStatus('Looking around.');
-    this.services.narrator.announce('Description started', true);
+    this.services.setStatus(Messages.DESCRIBE_LOOKING);
     this.services.camera.setFrameHandler((frame: image.PixelMap) => this.process(frame), LIVE_FRAME_INTERVAL_MS);
   }
 
@@ -28,8 +37,16 @@ export class DescribeFeature implements Feature {
     this.running = false;
     this.services.camera.setFrameHandler(undefined, 0);
     this.services.overlay.clear();
-    this.services.setStatus('Stopped.');
-    this.services.narrator.announce('Description stopped', true);
+  }
+
+  async analyzePhoto(photo: image.PixelMap, content: ContentRect): Promise<void> {
+    this.services.overlay.clear();
+    this.services.setStatus(Messages.ANALYSING_PHOTO);
+    const result = await this.services.detector.detect(photo, DETECTION_THRESHOLD);
+    this.services.overlay.drawDetections(result.detections, content);
+    this.services.setTiming(this.timings(result));
+    const sentence = describeScene(result.detections);
+    this.services.report(sentence === '' ? Messages.NOTHING_IN_PHOTO : sentence);
   }
 
   private async process(frame: image.PixelMap): Promise<void> {
@@ -46,14 +63,14 @@ export class DescribeFeature implements Feature {
     const sentence = this.tracker.update(result.detections, Date.now());
     if (sentence !== undefined) {
       this.services.setStatus(sentence);
-      this.services.narrator.announce(sentence);
+      this.services.narrator.announce(sentence, Priority.BACKGROUND);
     } else if (result.detections.length === 0) {
-      this.services.setStatus('Nothing recognised.');
+      this.services.setStatus(Messages.NOTHING_RECOGNISED);
     }
   }
 
   private timings(result: DetectionResult): string {
     const total = result.preprocessMs + result.inferenceMs + result.postprocessMs;
-    return `${total} ms (prep ${result.preprocessMs}, model ${result.inferenceMs}, post ${result.postprocessMs})`;
+    return Messages.timing(total, result.preprocessMs, result.inferenceMs, result.postprocessMs);
   }
 }

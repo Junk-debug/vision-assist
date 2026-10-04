@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@ohos/hypium';
 import { Detection } from '../main/ets/vision/DetectionTypes';
-import { SceneTracker } from '../main/ets/vision/SceneTracker';
+import { describeScene, SceneTracker } from '../main/ets/vision/SceneTracker';
 
 function detection(label: string, x1: number, x2: number): Detection {
   return { classId: 0, label: label, score: 0.9, x1: x1, y1: 0.4, x2: x2, y2: 0.6 };
@@ -35,6 +35,11 @@ export default function sceneTrackerTest() {
       const tracker = new SceneTracker();
       tracker.update([detection('clothing', 0.4, 0.6)], 10000);
       expect(tracker.update([detection('clothing', 0.4, 0.6)], 10300) === undefined).assertTrue();
+    });
+    it('describesAWholePhotoAtOnce', 0, () => {
+      const scene: Detection[] = [detection('cup', 0.0, 0.2), detection('chair', 0.7, 0.9), detection('chair', 0.4, 0.6)];
+      expect(describeScene(scene)).assertEqual('cup on the left, 2 chairs on the right');
+      expect(describeScene([])).assertEqual('');
     });
   });
 }

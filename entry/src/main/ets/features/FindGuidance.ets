@@ -1,3 +1,4 @@
+import { Messages } from '../common/Messages';
 import { NormalizedBox } from '../vision/DetectionTypes';
 
 const CENTER_WEIGHT: number = 0.55;
@@ -36,11 +37,11 @@ export function computeGuidance(target: NormalizedBox, fullSizeSide: number = FU
   const pulseMs = SLOWEST_PULSE_MS - (SLOWEST_PULSE_MS - FASTEST_PULSE_MS) * Math.pow(closeness, 1.5);
   let direction = '';
   if (Math.abs(offsetX) >= Math.abs(offsetY) && Math.abs(offsetX) > DIRECTION_DEADZONE) {
-    direction = offsetX < 0 ? 'turn left' : 'turn right';
+    direction = offsetX < 0 ? Messages.TURN_LEFT : Messages.TURN_RIGHT;
   } else if (Math.abs(offsetY) > DIRECTION_DEADZONE) {
-    direction = offsetY < 0 ? 'tilt up' : 'tilt down';
+    direction = offsetY < 0 ? Messages.TILT_UP : Messages.TILT_DOWN;
   } else if (sizeScore < ARRIVED_SIZE) {
-    direction = 'move closer';
+    direction = Messages.MOVE_CLOSER;
   }
   return { found: true, closeness: closeness, arrived: arrived, pulseMs: Math.round(pulseMs), direction: direction };
 }
