@@ -10,6 +10,7 @@ import accessibilityTest from './Accessibility.test';
 import hapticsTest from './Haptics.test';
 import textEnginesTest from './TextEngines.test';
 import frameSourceTest from './FrameSource.test';
+import rotatedBoxTest from './RotatedBox.test';
 
 export default function testsuite() {
   localUnitTest();
@@ -24,4 +25,5 @@ export default function testsuite() {
   hapticsTest();
   textEnginesTest();
   frameSourceTest();
+  rotatedBoxTest();
 }

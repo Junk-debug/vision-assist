@@ -4,7 +4,7 @@ import { mindSporeLite } from '@kit.MindSporeLiteKit';
 import { util } from '@kit.ArkTS';
 import { buildCharset, decodeGreedy } from './CtcDecoder';
 import { extractBoxes, groupIntoLines, TextBox } from './DbPostProcessor';
-import { resizeRgb } from './ImageOps';
+import { resizeRgb, rotatedCrop, stripWidth } from './ImageOps';
 import { TextLineResult, TextReadResult, TextRecognizer, TextWordResult } from './TextTypes';
 import { ON_DEVICE_PREPARE_TIMEOUT_MS, ON_DEVICE_RECOGNIZE_TIMEOUT_MS } from './TextEngineConfig';
 import { describeError, log } from '../../common/Logger';
@@ -80,7 +80,7 @@ export class PaddleTextRecognizer implements TextRecognizer {
       let x1 = 0;
       let y1 = 0;
       for (const box of line) {
-        const text = await this.readBox(pixels, rowBytes, box);
+        const text = await this.readBox(pixels, rowBytes, width, height, box);
         if (text.length > 0) {
           words.push(text);
           wordResults.push({ text: text, x1: box.x0 / width, y1: box.y0 / height, x2: box.x1 / width, y2: box.y1 / height });
@@ -124,11 +124,18 @@ export class PaddleTextRecognizer implements TextRecognizer {
     return extractBoxes(probability, DETECTOR_SIZE, usedW, usedH, scale, width, height);
   }
 
-  private async readBox(pixels: Uint8Array, rowBytes: number, box: TextBox): Promise<string> {
-    const boxW = box.x1 - box.x0;
-    const boxH = box.y1 - box.y0;
-    const targetW = Math.max(1, Math.round(STRIP_HEIGHT * boxW / boxH));
-    const rgb = resizeRgb(pixels, rowBytes, box.x0, box.y0, boxW, boxH, targetW, STRIP_HEIGHT);
+  private async readBox(pixels: Uint8Array, rowBytes: number, width: number, height: number, box: TextBox): Promise<string> {
+    let rgb: Uint8Array;
+    let targetW: number;
+    if (box.rect.angle === 0) {
+      const boxW = box.x1 - box.x0;
+      const boxH = box.y1 - box.y0;
+      targetW = Math.max(1, Math.round(STRIP_HEIGHT * boxW / boxH));
+      rgb = resizeRgb(pixels, rowBytes, box.x0, box.y0, boxW, boxH, targetW, STRIP_HEIGHT);
+    } else {
+      targetW = stripWidth(box.rect, STRIP_HEIGHT);
+      rgb = rotatedCrop(pixels, rowBytes, width, height, box.rect, STRIP_HEIGHT);
+    }
     const strips = this.splitStrips(rgb, targetW);
     let text = '';
     for (const strip of strips) {
