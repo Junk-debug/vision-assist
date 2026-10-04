@@ -1,6 +1,8 @@
 # Vision Assist
 
-An offline assistive feature for blind and low-vision users on HarmonyOS. Point the phone, and it tells you what is in front of you, with boxes drawn on the live camera view. All recognition runs on the device: no cloud, no account, no camera frame leaves the phone.
+**Demo video:** [youtu.be/c6YDpCh5tAw](https://youtu.be/c6YDpCh5tAw)
+
+An offline assistive feature for blind and low-vision users on HarmonyOS. Point the phone, and it tells you what is in front of you, with boxes drawn on the live camera view. Recognition runs on the device by default. Find an object can also use SAM 3 in the cloud when the phone is online, to find anything you type or dictate (keys included); offline it falls back to the on-device model by itself.
 
 Built for the HackYeah 2026 Huawei challenge "Imagine What's Next" (Human-Centric Technology, Intelligent Experiences).
 
@@ -11,13 +13,13 @@ Built for the HackYeah 2026 Huawei challenge "Imagine What's Next" (Human-Centri
 | Live describe (camera, on-device detection, boxes, spoken summary) | Working on the emulator |
 | Screen reader support | Heading-first focus order, polite announcements, modal pickers; checked through the accessibility tree, see [Accessibility](#accessibility) |
 | Front and back camera | Switch button on every feature screen; boxes land on the objects with both emulator cameras |
-| Find an object with "warmer / colder" vibration | Implemented, runs on the emulator; vibration not verified (the emulator vibrator reports "Device operation failed") |
+| Find an object with "warmer / colder" vibration | Working on a Kirin 9000S phone. Pick from the list or type/dictate any object. Online: SAM 3 cloud search (Roboflow, needs `rawfile/sam3.json`); offline or when the cloud fails: the on-device model. A chip shows the active engine |
 | Read printed text | Merged into Describe surroundings: short text is said in the description, longer text is read aloud in chunks after it; the main button becomes Stop reading while it plays; on-device OCR fallback when Core Vision OCR is missing |
 | Find a word (typed or preset, spoken and haptic guidance) | Implemented; picker, typing and the OCR loop verified on the emulator, guidance on real printed text and vibration not verified |
 | Full text screen (Show full text in Describe) | Large, scrollable, selectable text, one screen reader stop per line, Read again |
 | Photo from the gallery (Describe) | System photo picker, no storage permission; the photo is decoded at most 2048 px on the long side |
-| Light check | Ambient light sensor, falling back to camera brightness when the sensor reads 0 lux in a bright scene (the emulator sensor always reports 0); verified on the emulator through the camera fallback |
-| Color check | Names the color in the middle of the frame with white-balance correction from the rest of the frame (for example "blue", "probably beige", "mixed colours"); unit tested, not verified on a real phone |
+| Light check | Part of Describe surroundings (no separate tile). Ambient light sensor, falling back to camera brightness when the sensor reads 0 lux in a bright scene (the emulator sensor always reports 0); verified on the emulator through the camera fallback |
+| Color check | Not in the menu right now (code kept). Names the color in the middle of the frame with white-balance correction from the rest of the frame (for example "blue", "probably beige", "mixed colours"); unit tested, not verified on a real phone |
 
 ## Screens
 
@@ -31,7 +33,7 @@ The app opens on a list of features without starting the camera. Each feature ha
 |---|---|
 | ![Find a word picker](docs/screenshots/picker-find-a-word.png) | ![Find an object picker](docs/screenshots/picker-find-an-object.png) |
 
-Known limits: the detector knows 194 everyday classes. It is weak on small items such as keys and has no wallet class. See `tools/model/README.md`.
+Known limits: the on-device detector knows 194 everyday classes. It has no key or wallet class, so those need the cloud search. See `tools/model/README.md`.
 
 ## How it works
 
@@ -175,7 +177,7 @@ The debug-only `frames` product feeds still images or image sequences from the M
 
 ## Model
 
-`entry/src/main/resources/rawfile/yolov8s_oiv7_416_sub.ms` is committed so the app builds without any model tooling. To rebuild it, follow `tools/model/README.md`.
+`entry/src/main/resources/rawfile/yolov8s_oiv7_640_sub.ms` is committed so the app builds without any model tooling. To rebuild it, follow `tools/model/README.md`.
 
 ## License
 
