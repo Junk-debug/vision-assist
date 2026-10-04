@@ -28,5 +28,5 @@
 ## Later
 
 - [ ] Optional cloud assist (SAM 3 or a VLM) behind a provider switch, off by default
-- [ ] Rotated text support in the on-device OCR
+- [x] Rotated text support in the on-device OCR
 - [ ] Fine-tune the detector on keys and wallets

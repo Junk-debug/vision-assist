@@ -97,7 +97,18 @@ A single phone camera cannot measure absolute distance, so guidance uses two ima
 `TextReader` holds a list of `TextRecognizer` implementations (`vision/text/TextTypes.ets`): `prepare()`, `isReady()`, `recognize()`, `release()`. `AppServices` registers them in order:
 
 1. `SystemTextRecognizer`: Core Vision Kit `textRecognition`. `prepare()` calls `textRecognition.init()`.
-2. `PaddleTextRecognizer`: PP-OCRv4 mobile text detector and English recognizer converted to MindSpore Lite (`ocr_det.ms`, `ocr_rec.ms`, `ocr_dict.txt`), with DB post-processing (`DbPostProcessor.ets`), strip splitting for long lines and greedy CTC decoding (`CtcDecoder.ets`) written in ArkTS.
+2. `PaddleTextRecognizer`: PP-OCRv4 mobile text detector and English recognizer converted to MindSpore Lite (`ocr_det.ms`, `ocr_rec.ms`, `ocr_dict.txt`), with DB post-processing (`DbPostProcessor.ets`), rotated boxes (`RotatedBox.ets`), strip splitting for long lines and greedy CTC decoding (`CtcDecoder.ets`) written in ArkTS.
+
+### OCR post-processing (on-device engine)
+
+1. The detector's probability map (640 x 640) is thresholded at 0.3 and split into 4-connected components. During the flood fill each component records the first and last column of every row.
+2. Those row ends give the convex hull of the component's pixel squares (monotone chain). Rotating calipers over the hull edges give the minimum-area rectangle, with its angle folded into (-45, 45] degrees. A rectangle that is taller than wide counts as upright.
+3. If the angle is below 2 degrees the box is the old axis-aligned box (same unclip, same rounding), so horizontal text reads exactly as before. Otherwise the rectangle is unclipped along its own axes (DB offset = area x 1.6 / perimeter) and scaled to frame pixels.
+4. Line grouping works in the page frame: the page angle is the width-weighted median of the box angles (0 below 2 degrees), each box is projected onto that frame, and boxes whose vertical spans overlap by more than half join one line, ordered left to right along the text direction.
+5. A rotated box is cut out with an affine bilinear crop (`rotatedCrop` in `ImageOps.ets`) into an upright strip 48 px high; an upright box keeps `resizeRgb`. Strip splitting and CTC decoding are unchanged.
+6. Word and line boxes handed to the app stay axis-aligned, normalised bounding boxes of the rotated rectangles, so Find a word and the overlays need no change.
+
+Cost: the flood fill does two extra comparisons per text pixel, and each component builds a hull of at most two points per row with an O(h^2) caliper pass (h is a few dozen vertices). In the hypium host runtime a 640 x 640 map with 10 text lines took about 110 to 150 ms against 90 to 125 ms for the old code (about +15 %, interpreter, no AOT). The rotated crop samples as many pixels as the old resize and costs the same. On a phone this adds a few milliseconds to a Find a word cycle of 700 ms.
 
 Both are prepared in parallel at start-up. The choice depends only on what the device can do at runtime. There is no "is this an emulator" check anywhere in the code. The engine name (`system` or `on-device`) and its time are shown in the timing line, so the jury can see which one ran.
 
@@ -190,14 +201,14 @@ export DEVECO_SDK_HOME=/Applications/DevEco-Studio.app/Contents/sdk NODE_HOME=/A
 
 Results are in `entry/.test/default/intermediates/test/coverage_data/test_result.txt`.
 
-Not covered by automated tests: camera handling, YOLO tensor decoding, the OCR post-processing (`DbPostProcessor`, `CtcDecoder`), and the UI. These were checked by running the app on the emulator with the Mac webcam and reading the logs (`hilog`, tag `VisionAssist`). The on-device OCR pipeline was first validated in Python against onnxruntime on 8 synthetic samples (character accuracy 0.886 overall) before it was ported to ArkTS.
+Not covered by automated tests: camera handling, YOLO tensor decoding, the CTC decoder, and the UI. The rotated-box geometry (hull, minimum-area rectangle, angle on rasterised bars from -15 to 15 degrees, corners, crop mapping, box extraction and line grouping) is covered by `RotatedBox.test.ets`. These were checked by running the app on the emulator with the Mac webcam and reading the logs (`hilog`, tag `VisionAssist`). The on-device OCR pipeline was first validated in Python against onnxruntime on 8 synthetic samples (character accuracy 0.886 overall) before it was ported to ArkTS.
 
 ## Known limits
 
 - The detector has no key or wallet class and is weak on small items. Reliable demo targets: person, bottle, mug, laptop, mobile phone, watch, chair, door.
 - Not yet verified on a real phone: vibration (the emulator vibrator reports "Device operation failed"), Core Vision OCR, frame rotation for the real sensor, the `en-US` voice, and a full walkthrough with the screen reader switched on. The accessibility tree was checked on the emulator.
 - Timings are emulator CPU numbers; a phone may be faster or slower and the NPU is not used.
-- The on-device OCR handles horizontal text only (5 degree rotation already breaks it), confuses similar glyphs (l/1, o/0) and highlights a whole box when the word is inside a longer line.
+- The on-device OCR reads text rotated up to about 15 degrees (tested in Python on synthetic samples, not yet on a phone); vertical text, curved text and perspective are not handled. It confuses similar glyphs (l/1, o/0) and highlights a whole box when the word is inside a longer line.
 - If the system OCR reports ready but then fails on every call, each read pays for that failure before the fallback runs; the engine is not demoted for the session.
 - Speech and the interface are English only.
 - Distance is relative (box size and position), not metric.

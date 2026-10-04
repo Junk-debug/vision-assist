@@ -129,3 +129,25 @@ Evidence paths outside this repository (`yolo-spike/`, `spike-vision/`) refer to
 - **Why:** The privacy claim "no network permission" must hold for what ships, and it is easiest to prove when the shipped package contains neither the permission nor the code. hvigor has no per-target `module.json5` and no per-build-mode permissions; per-target source roots (`source.sourceRoots`) and the documented `setModuleJsonOpt` hook in `hvigorfile.ts` are the supported mechanisms. A product, not just a target, keeps `assembleApp` for `default` from packing the debug HAP.
 - **Alternatives considered:** A runtime switch in the normal build (would need INTERNET in every build); keying only on build mode (the debug HAP of `default`, used for normal development, would then request INTERNET); a hidden gesture to turn injection on (not needed: the server being reachable is the switch, and only in the `frames` build).
 - **Evidence:** built `module.json` of `default` debug and release lists only CAMERA and VIBRATE, and its `modules.abc` does not contain `InjectedFrameSource`; the `frames` debug HAP lists INTERNET as well; `--product frames --build-mode release` fails in the `nodesEvaluated` hook.
+
+## 16. Rotated boxes in the on-device OCR
+
+- **Decision:** The DB post-processing fits a minimum-area rectangle (convex hull of the component plus rotating calipers, no OpenCV), unclips it along its own axes and reads it through a rotated bilinear crop. Boxes under 2 degrees keep the old axis-aligned path. Lines are grouped in the page frame given by the width-weighted median angle. Boxes returned to the app stay axis-aligned.
+- **Why:** Blind users hold the phone crooked. With axis-aligned boxes, text rotated by 5 degrees read at 0.41 character accuracy because each crop held slanted text plus pieces of the next line.
+- **Alternatives considered:** Angle from second moments (PCA) of the component pixels: same gains on rotated text, but ascenders and descenders tilted short words such as "Settings" past 2 degrees and cost 0.8 points on `03_small`. A 1 or 1.5 degree threshold: slightly worse on the -2 degree book photo; 3 degrees: 3 degree samples fall back to 0.82. Deskewing the whole frame: one angle for the frame, an extra full-frame resample, and no help for mixed angles.
+- **Evidence:** Python prototype and evaluation in `yolo-spike/ocr/rot/` (`rot_ocr.py`, `make_rot_samples.py`, `evaluate_rot.py`, `rot_report.json`), same models through onnxruntime. Character accuracy before -> after:
+
+| Samples | Before | After |
+|---|---|---|
+| `04_rotated` (5 degrees) | 0.411 | 0.984 |
+| `06_bookphoto` (-2 degrees, blur, noise) | 0.856 | 0.957 |
+| Other 6 original samples | 0.949 to 0.980 | unchanged |
+| Original 8, overall | 0.886 | 0.973 |
+| 60 rotated samples (6 layouts), 3 degrees | 0.673 | 0.975 |
+| 5 degrees | 0.419 | 0.982 |
+| 7 degrees | 0.266 | 0.977 |
+| 10 degrees | 0.175 | 0.982 |
+| 15 degrees | 0.079 | 0.980 |
+
+- **Not verified:** the ArkTS port against the Python numbers on a device (the geometry is unit-tested); real camera photos with perspective.
+
