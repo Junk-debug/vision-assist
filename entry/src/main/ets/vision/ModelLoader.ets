@@ -3,9 +3,10 @@ import { mindSporeLite } from '@kit.MindSporeLiteKit';
 import { describeError, log } from '../common/Logger';
 
 const CPU_THREADS: number = 4;
+const CPU_PRECISION: string = 'preferred_fp16';
 
 function cpuDevice(): mindSporeLite.CpuDevice {
-  return { threadNum: CPU_THREADS };
+  return { threadNum: CPU_THREADS, precisionMode: CPU_PRECISION };
 }
 
 function findAccelerator(): mindSporeLite.NNRTDeviceDescription | undefined {
@@ -69,6 +70,6 @@ export async function loadModel(context: common.UIAbilityContext, fileName: stri
   }
   const modelContext: mindSporeLite.Context = { target: ['cpu'], cpu: cpuDevice() };
   const model = await mindSporeLite.loadModelFromBuffer(buffer, modelContext);
-  log(`model ${fileName} on CPU`);
+  log(`model ${fileName} on CPU (${CPU_PRECISION})`);
   return model;
 }

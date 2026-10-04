@@ -79,7 +79,7 @@ Source layout (`entry/src/main/ets`):
 
 Camera: the switch button in the top bar changes between the back and the front camera. Each camera has its own frame rotation (`BACK_FRAME_ROTATION`, `FRONT_FRAME_ROTATION` in `common/Config.ets`), and the overlay is mirrored for the front camera because its preview is mirrored.
 
-Platform capabilities used: Camera Kit (front and back camera), MindSpore Lite Kit (on-device inference; runs on the phone's NPU through NNRt when an accelerator is present, with CPU fallback for unsupported operators, otherwise CPU only; NPU path not verified on a device, the emulator has no accelerator), Core Vision Kit (system text recognition on devices that provide it), Core Speech Kit (offline TTS), Accessibility Kit, Sensor Service Kit (vibrator for guidance, ambient light sensor), Media Library Kit (photo picker), Image Kit (decoding).
+Platform capabilities used: Camera Kit (front and back camera), MindSpore Lite Kit (on-device inference in fp16 on the CPU, 55 ms per frame for the detector on a Kirin 9000S phone versus 119 ms in fp32; the app also tries the phone's NNRt accelerators first, but on the tested Kirin 9000S phone both NPU drivers return a model without inputs for our float32 graphs, so it falls back to the CPU; an NPU-ready conversion is future work), Core Vision Kit (system text recognition on devices that provide it), Core Speech Kit (offline TTS), Accessibility Kit, Sensor Service Kit (vibrator for guidance, ambient light sensor), Media Library Kit (photo picker), Image Kit (decoding).
 
 ## Accessibility
 
