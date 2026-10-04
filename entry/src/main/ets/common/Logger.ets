@@ -10,5 +10,6 @@ export function log(message: string): void {
 
 export function describeError(error: Object): string {
   const businessError = error as BusinessError;
-  return `code=${businessError.code} message=${businessError.message}`;
+  const stack = (error as Error).stack ?? '';
+  return `code=${businessError.code} message=${businessError.message} ${stack.split('\n').slice(0, 3).join(' | ')}`;
 }

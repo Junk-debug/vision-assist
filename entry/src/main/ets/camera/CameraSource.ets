@@ -1,4 +1,6 @@
 import { camera } from '@kit.CameraKit';
+import { choosePreviewProfile, isYuv } from './PreviewProfile';
+import { nv21ToRgba } from './Nv21';
 import { image } from '@kit.ImageKit';
 import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
@@ -9,6 +11,7 @@ import { FrameHandler, FrameSource, PreviewListener } from './FrameSource';
 
 const RECEIVER_CAPACITY: number = 4;
 const BYTES_PER_PIXEL: number = 4;
+const YUV_PLANES_FACTOR: number = 1.5;
 
 export class CameraSource implements FrameSource {
   private manager?: camera.CameraManager;
@@ -19,6 +22,7 @@ export class CameraSource implements FrameSource {
   private receiver?: image.ImageReceiver;
   private handler?: FrameHandler;
   private gate: FrameGate = new FrameGate();
+  private yuvFrames: boolean = false;
   private active: boolean = false;
   private frameRequest?: (frame: image.PixelMap) => void;
   private position: camera.CameraPosition = camera.CameraPosition.CAMERA_POSITION_BACK;
@@ -100,7 +104,9 @@ export class CameraSource implements FrameSource {
         this.position = device.cameraPosition;
       }
       const capability = this.manager.getSupportedOutputCapability(device, camera.SceneMode.NORMAL_PHOTO);
-      const profile = capability.previewProfiles[0];
+      const profile = choosePreviewProfile(capability.previewProfiles);
+      this.yuvFrames = isYuv(profile);
+      log(`preview profiles ${capability.previewProfiles.map((p: camera.Profile) => `${p.size.width}x${p.size.height}/f${p.format}`).join(' ')}; chosen ${profile.size.width}x${profile.size.height}/f${profile.format}`);
       this.input = this.manager.createCameraInput(device);
       await this.input.open();
       this.previewOutput = this.manager.createPreviewOutput(profile, surfaceId);
@@ -171,6 +177,9 @@ export class CameraSource implements FrameSource {
 
   private async toPixelMap(frame: image.Image, width: number, height: number): Promise<image.PixelMap> {
     const component = await frame.getComponent(image.ComponentType.JPEG);
+    if (this.yuvFrames) {
+      return this.yuvToPixelMap(component, width, height);
+    }
     const stride = component.rowStride > 0 ? component.rowStride / BYTES_PER_PIXEL : width;
     const options: image.InitializationOptions = {
       size: { width: stride, height: height },
@@ -183,6 +192,22 @@ export class CameraSource implements FrameSource {
     if (stride !== width) {
       await pixelMap.crop({ x: 0, y: 0, size: { width: width, height: height } });
     }
+    return pixelMap;
+  }
+
+  private async yuvToPixelMap(component: image.Component, width: number, height: number): Promise<image.PixelMap> {
+    if (component === null || component === undefined || !component.byteBuffer) {
+      throw new Error(`empty YUV component ${component === null || component === undefined ? 'missing' : 'without buffer'}`);
+    }
+    const stride = component.rowStride > 0 ? component.rowStride : width;
+    const rgba = nv21ToRgba(new Uint8Array(component.byteBuffer), width, height, stride);
+    const options: image.InitializationOptions = {
+      size: { width: width, height: height },
+      srcPixelFormat: image.PixelMapFormat.RGBA_8888,
+      pixelFormat: image.PixelMapFormat.RGBA_8888,
+      editable: true
+    };
+    const pixelMap = await image.createPixelMap(rgba, options);
     return pixelMap;
   }
 

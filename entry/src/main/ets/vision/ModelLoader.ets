@@ -22,6 +22,20 @@ function findAccelerator(): mindSporeLite.NNRTDeviceDescription | undefined {
   }
 }
 
+function isUsable(model: mindSporeLite.Model | null | undefined): boolean {
+  if (model === null || model === undefined) {
+    return false;
+  }
+  try {
+    const inputs = model.getInputs();
+    return inputs !== null && inputs !== undefined && inputs.length > 0 &&
+      inputs.every((tensor: mindSporeLite.MSTensor) => tensor !== null && tensor !== undefined &&
+        tensor.shape !== null && tensor.shape !== undefined && tensor.shape.length > 0);
+  } catch (error) {
+    return false;
+  }
+}
+
 async function loadOnAccelerator(buffer: ArrayBuffer, fileName: string): Promise<mindSporeLite.Model | undefined> {
   const accelerator = findAccelerator();
   if (accelerator === undefined) {
@@ -34,6 +48,10 @@ async function loadOnAccelerator(buffer: ArrayBuffer, fileName: string): Promise
   const modelContext: mindSporeLite.Context = { target: ['nnrt', 'cpu'], nnrt: nnrt, cpu: cpuDevice() };
   try {
     const model = await mindSporeLite.loadModelFromBuffer(buffer, modelContext);
+    if (!isUsable(model)) {
+      log(`model ${fileName} loaded on NNRt accelerator ${accelerator.deviceName()} without usable inputs, using CPU`);
+      return undefined;
+    }
     log(`model ${fileName} on NNRt accelerator ${accelerator.deviceName()} with CPU fallback`);
     return model;
   } catch (error) {
