@@ -9,15 +9,17 @@ Built for the HackYeah 2026 Huawei challenge "Imagine What's Next" (Human-Centri
 | Feature | State |
 |---|---|
 | Live describe (camera, on-device detection, boxes, spoken summary) | Working on the emulator |
-| Screen reader support | Implemented and checked through the accessibility tree; not yet tried with the screen reader switched on |
+| Screen reader support | Heading-first focus order, polite announcements, modal pickers; checked through the accessibility tree, see [Accessibility](#accessibility) |
 | Front and back camera | Switch button on every feature screen; boxes land on the objects with both emulator cameras |
 | Find an object with "warmer / colder" vibration | Implemented, runs on the emulator; vibration not verified (the emulator vibrator reports "Device operation failed") |
 | Read printed text | Implemented with an on-device OCR fallback (Core Vision OCR does not run on the emulator) |
 | Find a word (typed or preset, spoken and haptic guidance) | Implemented; picker, typing and the OCR loop verified on the emulator, guidance on real printed text and vibration not verified |
+| Full text screen for Read text | Large, scrollable, selectable text, one screen reader stop per line, Read again |
+| Photo from the gallery (Describe, Read text) | System photo picker, no storage permission; the photo is decoded at most 2048 px on the long side |
 
 ## Screens
 
-The app opens on a list of features without starting the camera. Each feature has its own screen with the camera view, a status card with the spoken result and one large action button. Find an object and Find a word first ask what to look for in a bottom sheet.
+The app opens on a list of features without starting the camera. Each feature has its own screen with the camera view, a status card with the spoken result and one large action button. Find an object and Find a word ask what to look for in a bottom sheet. Describe and Read text can also take a photo from the gallery; Read text then opens the full text screen.
 
 | Start screen | Find an object, back camera | Front camera |
 |---|---|---|
@@ -51,12 +53,16 @@ Source layout (`entry/src/main/ets`):
 
 | Path | Responsibility |
 |---|---|
-| `pages/Index.ets` | Navigation between the start screen and feature screens |
+| `pages/Index.ets` | Navigation between the start screen, feature screens and the full text screen |
 | `pages/HomePage.ets` | Start screen with the feature tiles |
-| `pages/FeaturePage.ets` | Feature screen: camera, status, action button, picker, camera switch |
+| `pages/FeaturePage.ets` | Feature screen: camera or photo, status, action buttons, picker sheet, camera switch |
+| `pages/FullTextPage.ets` | Full OCR text, one line per screen reader stop, Read again |
+| `common/Messages.ets` | Every spoken or shown sentence: statuses, announcements, guidance, failures |
+| `accessibility/*.ets` | Screen reader events (announce, move focus), element ids, focus chain, announcement rate limit |
+| `photo/*.ets` | Gallery picker, capped decoding with EXIF rotation, photo analysis |
 | `app/AppServices.ets` | Camera, detector, text reader and narrator shared by all screens |
 | `ui/FeatureCatalog.ets` | Names, descriptions, icons, colours and labels of each feature |
-| `ui/components/*.ets` | Tile, top bar, buttons, status card, camera preview, picker sheet |
+| `ui/components/*.ets` | Screen frame (title, back), tile, buttons, status card, camera preview, picker sheet |
 | `ui/theme/Theme.ets` | All colours, sizes, spacing and font sizes |
 | `ui/Overlay.ets` | Boxes and labels drawn over the camera view, mirrored for the front camera |
 | `camera/CameraSource.ets` | Camera session, front and back switching, frame delivery with throttling |
@@ -65,19 +71,48 @@ Source layout (`entry/src/main/ets`):
 | `vision/SceneTracker.ets` | Which objects to announce and when |
 | `features/*.ets` | One class per feature; `GuidanceCoach` is the shared pulse and speech logic of both find modes |
 | `vision/text/*.ets` | OCR engines, word boxes and `WordMatcher` |
-| `speech/Narrator.ets` | Text to speech and accessibility announcements |
-
-Accessibility:
-
-- Every tile, button and picker row is one screen reader item with a name and a description; the icon, title and description of a tile are grouped, so a tile reads as "Describe surroundings, button, Hear what is in front of you, live".
-- Icons, the camera view and the overlay are hidden from the screen reader. Focus goes top to bottom: back, title, camera switch, status, action button.
-- Opening a feature announces its name; results are announced with `announceForAccessibility` when a screen reader is on, otherwise spoken with Core Speech Kit.
-- Touch targets are at least 48 vp (tiles and picker rows are larger, the action button is at least 56 vp high). Text is in fp and cards grow with the text; from a font scale of 1.6 the start screen switches to one column.
-- Secondary text is `#5A6573` (5.3:1 on the page background) and the feature colours are darkened where needed to keep at least 4.1:1 against their tinted chips.
+| `speech/Narrator.ets` | Announcement priorities: screen reader announcement when it is on, Core Speech Kit otherwise |
 
 Camera: the switch button in the top bar changes between the back and the front camera. Each camera has its own frame rotation (`BACK_FRAME_ROTATION`, `FRONT_FRAME_ROTATION` in `common/Config.ets`), and the overlay is mirrored for the front camera because its preview is mirrored.
 
-Platform capabilities used: Camera Kit, MindSpore Lite Kit (on-device inference), Core Speech Kit (offline TTS), Accessibility Kit.
+Platform capabilities used: Camera Kit, MindSpore Lite Kit (on-device inference), Core Speech Kit (offline TTS), Accessibility Kit, Media Library Kit (photo picker), Image Kit (decoding).
+
+## Accessibility
+
+The app is built for people who use it without looking at the screen. The conventions follow WCAG 2.2 for mobile, the VoiceOver and TalkBack conventions and the HarmonyOS screen reader guidelines (Accessibility Kit, "提升屏幕朗读无障碍体验").
+
+Conventions implemented:
+
+| Convention | How | API (minimum API level) |
+|---|---|---|
+| The first focus on every screen is its title | The title has `accessibilityDefaultFocus(true)` and the description "Heading". ArkUI has no heading role (`AccessibilityRoleType` up to API 24 has none), so "Heading" is read as the element description: "Describe surroundings, Heading" | `accessibilityDefaultFocus` (18), `accessibilityDescription` (12) |
+| Reading order: title, status, main action, other actions, camera switch, Back | The node tree is in this order (Back and camera switch are drawn top left and top right with `position`, but come last in the tree) and every element names its successor with `accessibilityNextFocusId`, built from the elements present (`accessibility/FocusChain.ets`) | `accessibilityNextFocusId` (18) |
+| One element per control, with a label and a hint | Tiles, buttons and picker rows are `accessibilityGroup` with `accessibilityRole(BUTTON)`, `accessibilityText` and `accessibilityDescription`. Hints say what happens ("Reads the printed text in front of the camera"), not the gesture | `accessibilityGroup` (10), `accessibilityRole` (18) |
+| Toggles say their state through their label | "Start describing" becomes "Stop describing" and "Describing started" is announced once; the stop and start colours are never the only cue | `accessibilityText` |
+| Results do not steal focus | New results are sent as `announceForAccessibilityNotInterrupt`, so they queue behind what the screen reader is saying and focus stays where it is. Only "X is right in front of you" and explicit commands (Read again, permission problems) interrupt | `sendAccessibilityEvent` (12), `announceForAccessibilityNotInterrupt` (18) |
+| Continuous modes do not spam | Describe repeats a scene only when it changes and at most every 2.5 s; warmer and colder guidance at most every 3 s; with the screen reader on, background announcements are additionally limited to one every 4 s | `accessibility/RateLimiter.ets` |
+| No double speech | With the screen reader on, the app does not speak screen names itself; focus does that. With it off, Core Speech Kit announces the screen name | `isScreenReaderOpenSync` (10) |
+| Pickers are modal | Pickers are `bindSheet` sheets: the screen behind is covered, the sheet title gets focus when the sheet opens, Cancel is the last item, and closing the sheet moves focus back to the button that opened it. With the screen reader off the picker opens by itself on entering Find; with it on, the screen first reads its title and the user opens the picker with "Choose an object" | `bindSheet`, `requestFocusForAccessibility` (12) |
+| Focus comes back where it was | Back from a feature returns focus to its tile; back from the full text returns to Show full text; after the photo picker focus returns to the photo button | `requestFocusForAccessibility` (12) |
+| Decorative content is hidden | Camera preview, photo, overlay canvas, icons, dividers and the timing line are `accessibilityLevel('no')` or inside a `no-hide-descendants` container | `accessibilityLevel` (10) |
+| Long text is reachable | The full text screen shows every OCR line as its own element in a scroll view, so the screen reader steps line by line and scrolls on its own; the lines can be selected and copied | `copyOption` |
+| Failures say what to do next | Every failure sentence in `common/Messages.ets` has a second sentence with the next step ("No text found. Hold the phone 20 to 30 centimetres from the text and try again."); a unit test checks this | |
+| Touch targets and text size | Buttons at least 48 vp (main action 56 vp, list rows 64 vp), text in fp, cards grow with the text, one column from font scale 1.6. Secondary text `#5A6573` (5.3:1), feature colours at least 4.1:1 against their chips | `ui/theme/Theme.ets` |
+
+APIs that exist but are not used: `accessibilityStateDescription` (API 23) would need a version guard because the app supports API 20, and the changing label already carries the state; `pageActive` events (API 23) are not needed because every screen is a `NavDestination`.
+
+### Manual test with the screen reader
+
+Turn on Settings, Accessibility, ScreenReader. Swipe right moves to the next element, swipe left to the previous one, double tap activates.
+
+1. Open the app. Expected first: "Vision Assist, Heading". Swipe right: the tagline, then "Describe surroundings, button, Hear what is in front of you, live", then the other tiles row by row.
+2. Double tap Describe surroundings. Expected first: "Describe surroundings, Heading" (not Back). Swipe right: the status, "Start describing" or "Stop describing", "Use a photo instead", "Switch to front camera", and Back last. While describing, results are read after the current element without moving focus.
+3. On the main button, double tap: "Describing stopped" is announced once and the button now reads "Start describing".
+4. Double tap Back: focus lands on the Describe surroundings tile.
+5. Open Find an object: "Find an object, Heading", status "What do you want to find?", "Choose an object". Double tap it: focus moves to "What do you want to find?, Heading" in the sheet. Swipe through the list; the screen behind is not reachable. Swipe to the end and double tap Cancel: focus is back on "Choose an object". Open it again and pick Mug: the camera starts and "Looking for mug" is announced; warmer and colder guidance is spoken at most every few seconds.
+6. Open Read text, point at printed text, double tap Read now: the text is read, the status says "Read N lines. Starts with: ...". Swipe to "Show full text" and open it: "Full text, Heading", then one line per swipe, then Read again, then Back. Back returns focus to Show full text.
+7. Double tap "Use a photo instead", cancel the gallery: "No photo chosen" and focus on the photo button. Choose a photo with text: the full text screen opens.
+8. Deny the camera permission once: the status reads "Camera is off. Press Allow camera access, or allow it in Settings." and the main button is "Allow camera access".
 
 ## How word matching works
 
