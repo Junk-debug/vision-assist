@@ -204,8 +204,9 @@ export class Messages {
     return label === 'person' ? `${count} people` : `${count} ${label}s`;
   }
 
-  static objectAt(label: string, count: number, position: string): string {
-    return `${Messages.objectCount(label, count)} ${position}`;
+  static objectAt(label: string, count: number, position: string, color: string = ''): string {
+    const name = Messages.objectCount(label, count);
+    return color === '' ? `${name} ${position}` : `${color} ${name} ${position}`;
   }
 
   static timing(totalMs: number, prepMs: number, modelMs: number, postMs: number): string {

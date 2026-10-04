@@ -125,8 +125,13 @@ export function positionOf(detection: Detection): string {
   return Messages.AHEAD;
 }
 
-function phraseOf(group: SceneGroup): string {
-  return Messages.objectAt(group.label, group.count, positionOf(group.best));
+export type ColorOf = (detection: Detection) => string;
+
+const NO_COLOR: ColorOf = (): string => '';
+
+function phraseOf(group: SceneGroup, colorOf: ColorOf = NO_COLOR): string {
+  const color = group.count === 1 && group.label !== PERSON_LABEL ? colorOf(group.best) : '';
+  return Messages.objectAt(group.label, group.count, positionOf(group.best), color);
 }
 
 export function relevantGroups(detections: Detection[], minRelevance: number = DESCRIBE_MIN_RELEVANCE,
@@ -134,8 +139,8 @@ export function relevantGroups(detections: Detection[], minRelevance: number = D
   return groupScene(detections).filter((group: SceneGroup) => group.relevance >= minRelevance).slice(0, maxObjects);
 }
 
-export function describeScene(detections: Detection[]): string {
-  const phrases = relevantGroups(detections).map((group: SceneGroup) => phraseOf(group));
+export function describeScene(detections: Detection[], colorOf: ColorOf = NO_COLOR): string {
+  const phrases = relevantGroups(detections).map((group: SceneGroup) => phraseOf(group, colorOf));
   return Messages.sceneSnapshot(phrases);
 }
 

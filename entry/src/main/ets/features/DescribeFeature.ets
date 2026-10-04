@@ -7,6 +7,7 @@ import { Priority } from '../speech/Narrator';
 import { normalizeFrame } from '../vision/FrameNormalizer';
 import { ContentRect, DetectionResult } from '../vision/DetectionTypes';
 import { describeScene, LiveSceneTracker } from '../vision/SceneTracker';
+import { colorResolverFor } from '../vision/ObjectColor';
 
 export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
   readonly id: string = 'describe';
@@ -36,7 +37,8 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
         const result = await this.services.detector.detect(frame, DETECTION_THRESHOLD);
         this.services.overlay.drawDetections(result.detections, content);
         this.services.setTiming(this.timings(result));
-        this.announce(describeScene(result.detections), Messages.NOTHING_TO_DESCRIBE);
+        const colorOf = await colorResolverFor(frame);
+        this.announce(describeScene(result.detections, colorOf), Messages.NOTHING_TO_DESCRIBE);
       } finally {
         frame.release();
       }
@@ -76,7 +78,8 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
     const result = await this.services.detector.detect(photo, DETECTION_THRESHOLD);
     this.services.overlay.drawDetections(result.detections, content);
     this.services.setTiming(this.timings(result));
-    this.announce(describeScene(result.detections), Messages.NOTHING_IN_PHOTO);
+    const colorOf = await colorResolverFor(photo);
+    this.announce(describeScene(result.detections, colorOf), Messages.NOTHING_IN_PHOTO);
   }
 
   private announce(sentence: string, emptyMessage: string): void {

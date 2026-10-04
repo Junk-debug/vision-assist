@@ -1,4 +1,5 @@
 import localUnitTest from './LocalUnit.test';
+import objectColorTest from './ObjectColor.test';
 import colorNamerTest from './ColorNamer.test';
 import findGuidanceTest from './FindGuidance.test';
 import findStateMachineTest from './FindStateMachine.test';
@@ -16,6 +17,7 @@ import readAloudTest from './ReadAloud.test';
 
 export default function testsuite() {
   localUnitTest();
+  objectColorTest();
   wordMatcherTest();
   findGuidanceTest();
   findStateMachineTest();

@@ -128,26 +128,6 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     changeTargetLabel: '',
     chooseTargetLabel: '',
     photoInput: false
-  },
-  {
-    id: 'color',
-    name: 'What color is this?',
-    description: 'Name the color in the middle',
-    icon: $r('sys.symbol.paintpalette'),
-    accent: Accent.color,
-    tint: Accent.colorTint,
-    needsDetector: false,
-    startLabel: 'Check the color',
-    stopLabel: 'Check the color',
-    busyLabel: 'Checking',
-    actionHint: 'Names the color of what is in the middle of the camera view',
-    readyText: 'Hold the item close to the camera, then press Check the color.',
-    picker: PickerKind.NONE,
-    targets: [],
-    targetPrompt: '',
-    changeTargetLabel: '',
-    chooseTargetLabel: '',
-    photoInput: false
   }
 ];
 
