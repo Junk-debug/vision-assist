@@ -2,6 +2,7 @@ import { image } from '@kit.ImageKit';
 import { textRecognition } from '@kit.CoreVisionKit';
 import { TextLineResult, TextReadResult, TextRecognizer, TextWordResult } from './TextTypes';
 import { NormalizedBox } from '../DetectionTypes';
+import { SYSTEM_PREPARE_TIMEOUT_MS, SYSTEM_RECOGNIZE_TIMEOUT_MS } from './TextEngineConfig';
 import { describeError, log } from '../../common/Logger';
 
 function boundsOf(points: textRecognition.PixelPoint[], width: number, height: number): NormalizedBox {
@@ -20,6 +21,8 @@ function boundsOf(points: textRecognition.PixelPoint[], width: number, height: n
 
 export class SystemTextRecognizer implements TextRecognizer {
   readonly name: string = 'system';
+  readonly prepareTimeoutMs: number = SYSTEM_PREPARE_TIMEOUT_MS;
+  readonly recognizeTimeoutMs: number = SYSTEM_RECOGNIZE_TIMEOUT_MS;
   private ready: boolean = false;
 
   async prepare(): Promise<boolean> {
@@ -29,10 +32,6 @@ export class SystemTextRecognizer implements TextRecognizer {
       log(`system text recognition unavailable ${describeError(error)}`);
       this.ready = false;
     }
-    return this.ready;
-  }
-
-  isReady(): boolean {
     return this.ready;
   }
 

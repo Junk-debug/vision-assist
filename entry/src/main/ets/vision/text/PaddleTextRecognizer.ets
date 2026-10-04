@@ -6,6 +6,7 @@ import { buildCharset, decodeGreedy } from './CtcDecoder';
 import { extractBoxes, groupIntoLines, TextBox } from './DbPostProcessor';
 import { resizeRgb } from './ImageOps';
 import { TextLineResult, TextReadResult, TextRecognizer, TextWordResult } from './TextTypes';
+import { ON_DEVICE_PREPARE_TIMEOUT_MS, ON_DEVICE_RECOGNIZE_TIMEOUT_MS } from './TextEngineConfig';
 import { describeError, log } from '../../common/Logger';
 import { loadModel } from '../ModelLoader';
 
@@ -32,6 +33,8 @@ interface Strip {
 
 export class PaddleTextRecognizer implements TextRecognizer {
   readonly name: string = 'on-device';
+  readonly prepareTimeoutMs: number = ON_DEVICE_PREPARE_TIMEOUT_MS;
+  readonly recognizeTimeoutMs: number = ON_DEVICE_RECOGNIZE_TIMEOUT_MS;
   private detector?: mindSporeLite.Model;
   private recognizer?: mindSporeLite.Model;
   private charset: string[] = [];
@@ -53,10 +56,6 @@ export class PaddleTextRecognizer implements TextRecognizer {
       log(`on-device OCR unavailable ${describeError(error)}`);
       this.ready = false;
     }
-    return this.ready;
-  }
-
-  isReady(): boolean {
     return this.ready;
   }
 
