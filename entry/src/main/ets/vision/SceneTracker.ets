@@ -211,8 +211,7 @@ export class LiveSceneTracker {
       }
     });
     added.sort((a: SceneGroup, b: SceneGroup) => b.relevance - a.relevance);
-    const room = Math.max(0, this.config.maxObjects - this.announced.length);
-    const fresh = added.slice(0, Math.min(room, this.config.maxNewPerSentence));
+    const fresh = added.slice(0, Math.min(this.config.maxObjects, this.config.maxNewPerSentence));
     if (fresh.length > 0) {
       for (const group of fresh) {
         this.announced.push(group.label);

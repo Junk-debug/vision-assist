@@ -1,8 +1,18 @@
 import { describe, it, expect } from '@ohos/hypium';
 import { LightLevel, Messages } from '../main/ets/common/Messages';
+import { describeWithText, textHintFor } from '../main/ets/vision/text/TextHint';
 
 export default function messagesTest() {
   describe('messages', () => {
+    it('buildsTextHints', 0, () => {
+      expect(textHintFor(' EXIT \n')).assertEqual('Text ahead: EXIT.');
+      expect(textHintFor('one two three four five six')).assertEqual('Text ahead: one two three four five six.');
+      expect(textHintFor('one two three four five six seven')).assertEqual('Text ahead. Open Read text to hear it.');
+      expect(textHintFor('  ')).assertEqual('');
+      expect(textHintFor(undefined)).assertEqual('');
+      expect(describeWithText('Door ahead.', 'Text ahead: EXIT.')).assertEqual('Door ahead. Text ahead: EXIT.');
+      expect(describeWithText('', 'Text ahead.')).assertEqual('Text ahead.');
+    });
     it('countsObjectsAndPeople', 0, () => {
       expect(Messages.objectCount('cup', 1)).assertEqual('cup');
       expect(Messages.objectCount('cup', 3)).assertEqual('3 cups');

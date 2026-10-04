@@ -20,6 +20,9 @@ export const LIVE_APPEAR_FRAMES: number = 2;
 export const LIVE_DISAPPEAR_FRAMES: number = 5;
 export const LIVE_SPEECH_GAP_MS: number = 3000;
 export const LIVE_MAX_NEW_PER_SENTENCE: number = 2;
+export const DESCRIBE_TEXT_BUDGET_MS: number = 1500;
+export const LIVE_TEXT_INTERVAL_MS: number = 4000;
+export const TEXT_HINT_MAX_WORDS: number = 6;
 
 export interface FindTuning {
   acquireWindow: number;

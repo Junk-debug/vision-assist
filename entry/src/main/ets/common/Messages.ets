@@ -51,6 +51,8 @@ export class Messages {
   static readonly DESCRIBE_STOPPED: string = 'Describing stopped';
   static readonly NOTHING_RECOGNISED: string = 'Nothing recognised. Point the phone at objects in good light.';
   static readonly NOTHING_TO_DESCRIBE: string = 'Nothing recognised. Try pointing at a table or a door.';
+  static readonly TEXT_AHEAD: string = 'Text ahead.';
+  static readonly TEXT_AHEAD_LONG: string = 'Text ahead. Open Read text to hear it.';
   static readonly LIVE_DESCRIPTION: string = 'Live description';
   static readonly STOP_LIVE_DESCRIPTION: string = 'Stop live description';
   static readonly LIVE_DESCRIPTION_HINT: string = 'Keeps watching and announces only what changes';
@@ -191,6 +193,10 @@ export class Messages {
 
   static sceneNew(phrases: string[]): string {
     return `New: ${phrases.join(', ')}.`;
+  }
+
+  static textAheadShort(text: string): string {
+    return `Text ahead: ${text}.`;
   }
 
   static sceneGone(labels: string[]): string {

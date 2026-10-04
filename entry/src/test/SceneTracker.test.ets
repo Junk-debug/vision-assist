@@ -104,6 +104,16 @@ export default function sceneTrackerTest() {
       }
       expect(run.said.length >= 2).assertTrue();
     });
+    it('liveAnnouncesAFourthObjectAfterThreeWereAnnounced', 0, () => {
+      const run = new LiveRun();
+      const three: Detection[] = [detection('bottle', 0.4, 0.6), detection('chair', 0.0, 0.3),
+        detection('person', 0.7, 1.0)];
+      run.feed(three, 40);
+      const before = run.said.length;
+      run.feed(three.concat([detection('laptop', 0.35, 0.65)]), 40);
+      expect(run.said.length).assertEqual(before + 1);
+      expect(run.said[run.said.length - 1]).assertEqual('New: laptop ahead.');
+    });
     it('liveResetForgetsTheScene', 0, () => {
       const run = new LiveRun();
       run.feed([detection('bottle', 0.4, 0.6)], 4);
