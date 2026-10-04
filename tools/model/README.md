@@ -1,6 +1,6 @@
 # Model pipeline
 
-The app ships one detector: **YOLOv8s trained on Open Images V7**, pruned to 194 everyday classes and converted to MindSpore Lite (`entry/src/main/resources/rawfile/yolov8s_oiv7_416_sub.ms`, input `[1,416,416,3]` NHWC float32, output `[1,198,3549]` channels first: `cx, cy, w, h` in input pixels followed by 194 sigmoid class scores).
+The app ships one detector: **YOLOv8s trained on Open Images V7**, pruned to 194 everyday classes and converted to MindSpore Lite (`entry/src/main/resources/rawfile/yolov8s_oiv7_640_sub.ms`, input `[1,640,640,3]` NHWC float32, output `[1,198,8400]` channels first: `cx, cy, w, h` in input pixels followed by 194 sigmoid class scores).
 
 You only need this folder to rebuild the model. The committed `.ms` file is what the app uses.
 
@@ -19,7 +19,7 @@ Requirements: Python 3.12, Docker (Apple silicon uses qemu because the converter
    ```sh
    python3.12 -m venv venv && . venv/bin/activate
    pip install ultralytics onnx onnxruntime onnxslim
-   python export_subset.py yolov8s-oiv7.pt 416 yolov8s-oiv7-416-sub.onnx keep_indices.json
+   python export_subset.py yolov8s-oiv7.pt 640 yolov8s-oiv7-640-sub.onnx keep_indices.json
    ```
 
    `yolov8s-oiv7.pt` is downloaded by Ultralytics (`YOLO("yolov8s-oiv7.pt")`) or from the Ultralytics assets release.
@@ -40,10 +40,10 @@ Requirements: Python 3.12, Docker (Apple silicon uses qemu because the converter
 4. Convert:
 
    ```sh
-   ./convert_to_ms.sh yolov8s-oiv7-416-sub.onnx yolov8s_oiv7_416_sub
+   ./convert_to_ms.sh yolov8s-oiv7-640-sub.onnx yolov8s_oiv7_640_sub
    ```
 
-5. Copy `yolov8s_oiv7_416_sub.ms` and `classes_subset.json` (as `classes.json`) into `entry/src/main/resources/rawfile/`.
+5. Copy `yolov8s_oiv7_640_sub.ms` and `classes_subset.json` (as `classes.json`) into `entry/src/main/resources/rawfile/`.
 
 ## Findings that shaped the choice
 

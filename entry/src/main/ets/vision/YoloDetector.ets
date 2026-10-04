@@ -6,7 +6,7 @@ import { Detection, DetectionResult } from './DetectionTypes';
 import { log } from '../common/Logger';
 import { loadModel } from './ModelLoader';
 
-const MODEL_FILE: string = 'yolov8s_oiv7_416_sub.ms';
+const MODEL_FILE: string = 'yolov8s_oiv7_640_sub.ms';
 const CLASSES_FILE: string = 'classes.json';
 const PAD_VALUE: number = 114 / 255;
 const NMS_IOU: number = 0.45;
@@ -47,6 +47,17 @@ export class YoloDetector {
 
   isReady(): boolean {
     return this.model !== undefined;
+  }
+
+  // The model's own spelling of a typed name ("bottle" -> "Bottle"), or '' when it has no such class.
+  canonicalLabel(name: string): string {
+    const wanted = name.trim().toLowerCase();
+    for (const label of this.labels) {
+      if (label.toLowerCase() === wanted) {
+        return label;
+      }
+    }
+    return '';
   }
 
   private labelFor(classId: number): string {
