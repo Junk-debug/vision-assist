@@ -4,29 +4,28 @@ Each entry: what we decided, why, what else we looked at, and where the evidence
 
 Evidence paths outside this repository (`yolo-spike/`, `spike-vision/`) refer to the team's spike folders from the hackathon; their findings are summarised here and in `tools/model/README.md`.
 
-## 1. Offline only, no network permission
+## 1. Offline first
 
-- **Decision:** All recognition, speech and guidance run on the phone. The app does not request `ohos.permission.INTERNET`.
-- **Why:** Camera frames of a blind person's home, letters and medicine are sensitive. Without the permission, "no frame leaves the phone" is enforced by the system, not by a promise. It also works without signal (stairwells, basements, abroad). It fits the challenge's point about digital sovereignty.
-- **Alternatives considered:** Cloud vision-language model for richer descriptions; optional cloud assist behind a switch.
-- **Evidence:** `entry/src/main/module.json5` lists only `CAMERA` and `VIBRATE`.
-- **Experiment (Oct 2026):** Find picks its detector automatically (`vision/FindEngine.ets`): SAM 3 on Roboflow Serverless (`vision/Sam3Detector.ets`) when the phone has a validated internet connection and a key is set, the on-device model when offline or for 20 s after a failed cloud request. A chip under the status card shows the engine and switches between Auto and on-device only. It needs `ohos.permission.INTERNET` and `GET_NETWORK_INFO`, now declared, and a key in `entry/src/main/resources/rawfile/sam3.json` (gitignored: `{"roboflowApiKey": "..."}`). Without the key the chip is hidden and Find stays offline.
-- **Plan:** An optional cloud assist, off by default, is listed under "Later" in `TODO.md`. It would need the network permission and is not started.
+- **Decision:** Recognition, speech and guidance run on the phone by default and whenever the phone is offline. The only cloud use is Find an object, and the user can turn it off with one tap.
+- **Why:** Camera frames of a blind person's home, letters and medicine are sensitive, and the app must work without signal (stairwells, basements, abroad). It fits the challenge's point about digital sovereignty. Cloud search is allowed for Find an object only because it finds things the on-device model cannot, such as keys.
+- **Alternatives considered:** Offline only with no network permission (the original decision); a cloud vision-language model for richer descriptions.
+- **Evidence:** `entry/src/main/module.json5` lists `CAMERA`, `VIBRATE`, `INTERNET` and `GET_NETWORK_INFO`. Describe and Find a word have no network code.
+- **Experiment (Oct 2026), now implemented:** Find picks its detector automatically (`vision/FindEngine.ets`): SAM 3 on Roboflow Serverless (`vision/Sam3Detector.ets`) when the phone has a validated internet connection and a key is set, the on-device model when offline or for 20 s after a failed cloud request (4 s timeout). The switch happens mid-search and is announced. A chip under the status card shows the engine and switches between Auto and on-device only. The key lives in `entry/src/main/resources/rawfile/sam3.json` (git-ignored: `{"roboflowApiKey": "..."}`). Without the key the chip is hidden and Find stays offline; the published release `.hap` ships without a key.
+- **Next:** call the cloud through our own backend instead of shipping a key in the app.
 
 ## 2. No voice input and no LLM
 
-- **Decision:** Control is by buttons and the system screen reader (swipe and double tap). Output is fixed sentences built in code. No language model.
-- **Why:** On-device speech recognition in Core Speech Kit supports only Chinese, and we will not send audio to a cloud service (decision 1). Fixed sentences are deterministic, short, testable (`SceneTracker.test.ets`) and cannot invent objects that are not there.
+- **Decision:** Control is by buttons and the system screen reader (swipe and double tap). The app has no speech recognition of its own; the target of Find an object or Find a word can be typed or dictated with the system keyboard's microphone. Output is fixed sentences built in code. No language model.
+- **Why:** On-device speech recognition in Core Speech Kit supports only Chinese, and the app does not send audio anywhere. Fixed sentences are deterministic, short, testable (`SceneTracker.test.ets`) and cannot invent objects that are not there.
 - **Alternatives considered:** Cloud ASR; an on-device or cloud LLM to phrase descriptions.
 - **Evidence:** project brief; `vision/SceneTracker.ets` builds sentences such as "bottle on the left, chair ahead".
 
-## 3. Separate features instead of one combined mode (for now)
+## 3. Three features, each on its own screen
 
-- **Decision:** Six features, each on its own screen with one large action button: Describe surroundings, Read text, Find an object, Find a word, Light check, What color is this?
-- **Why:** One task per screen is easier with a screen reader, each feature can be tested and demonstrated on its own, and the frame budget goes to one model at a time (the detector and the OCR do not run together).
+- **Decision:** Three features, each on its own screen with one large action button: Describe surroundings, Find an object, Find a word (`ui/FeatureCatalog.ets`: `describe`, `find`, `findword`). Reading text, the light status and object colours are part of Describe surroundings; there are no separate Read text, Light check or colour tiles.
+- **Why:** One task per screen is easier with a screen reader, and each feature can be tested and demonstrated on its own. Folding text, light and colour into Describe gives those answers without opening another screen.
 - **Alternatives considered:** A single "smart" camera mode that detects, reads and guides at once.
-- **Evidence:** `features/*.ets`, `pages/FeaturePage.ets`.
-- **Plan:** A combined mode may come later; not started.
+- **Evidence:** `features/*.ets`, `pages/FeaturePage.ets`. `LightFeature` and `ColorFeature` are still in the code but not in the menu.
 
 ## 4. YOLOv8s Open Images V7 subset instead of open-vocabulary detectors
 
@@ -39,7 +38,8 @@ Evidence paths outside this repository (`yolo-spike/`, `spike-vision/`) refer to
   - LW-DETR on Objects365 (has key and wallet classes): output was unusable in the time box.
   - COCO models: no key, wallet, glasses or watch class.
 - **Evidence:** `yolo-spike/bench/RESULTS.md` (71 web photos, 8 emulator frames, 9 user photos; "KEYS do not work with any config tested"), `yolo-spike/bench2/RESULTS.md` (keys 0/12 web and 0 on the user photo for every model), `tools/model/README.md`.
-- **Consequence:** Keys and wallets are not supported. The README and the demo say so. Fine-tuning on keys and wallets is in `TODO.md` under "Later" (**Plan**).
+- **Consequence:** Keys and wallets are not found by the on-device model. Since decision 1 they are found with cloud search (SAM 3) when the phone is online. Fine-tuning the on-device model on keys and wallets is a next step (**Plan**).
+- **Input size:** a 416x416 export was tried for speed and reverted to 640x640 because it missed a bottle on a table. Inference runs in fp16 on the CPU, about 55 to 190 ms per frame on a Kirin 9000S phone; camera frames are converted at half resolution before detection.
 
 ## 5. System OCR first, own PaddleOCR fallback
 
@@ -57,13 +57,12 @@ Evidence paths outside this repository (`yolo-spike/`, `spike-vision/`) refer to
 - **Evidence:** `build-profile.json5`; `docs/EMULATOR.md` item 7 (string SDK versions are required for the HarmonyOS runtime).
 - **Note:** The detector, OCR, guidance and matching code use MindSpore Lite and plain ArkTS, which are also available on OpenHarmony. Porting has not been tried.
 
-## 7. Warmer / colder from box centre and relative size
+## 7. Guidance from box centre and relative size
 
-- **Decision:** Closeness is 0.55 times how central the box is plus 0.45 times how large it is. The vibration period shortens from 1000 ms to 110 ms as closeness rises; "right in front of you" fires when the box is large and central.
+- **Decision:** Closeness is 0.55 times how central the box is plus 0.45 times how large it is, shown on the status card as a percentage. Guidance is spoken: directions ("turn left", "tilt up"), "Hold steady.", "Move the phone closer slowly." and "right in front of you, within reach" when the box is large and central (decision 17).
 - **Why:** A single camera cannot measure absolute distance, and the emulator has no depth sensor. Box size relative to the frame is a usable proxy for "getting closer" with any phone.
 - **Alternatives considered:** Metric distance from known object sizes (fragile across items); depth or ToF sensors (not on the emulator, not on every phone); stereo audio panning (idea, not built).
 - **Evidence:** `features/FindGuidance.ets`, `FindGuidance.test.ets`.
-- **Not verified:** how the vibration feels on a real phone.
 
 ## 8. Dropped "where did I last see it"
 
@@ -93,7 +92,7 @@ Evidence paths outside this repository (`yolo-spike/`, `spike-vision/`) refer to
 - **Decision:**
   - Each tile, button and picker row is one screen reader item with a name and a description (`accessibilityGroup`, `accessibilityText`, `accessibilityDescription`, role button).
   - Icons, the camera view and the overlay are hidden from the screen reader.
-  - Focus order: back, title, camera switch, status, action button.
+  - Focus order: title, status, main action, other actions, camera switch, Back.
   - When the screen reader is on, results are sent as `announceForAccessibility` events; otherwise Core Speech Kit speaks them.
   - Touch targets at least 48 vp; the action button at least 56 vp high; text in fp; one column from font scale 1.6.
 - **Why:** Blind users already know their screen reader. The app should work with it rather than replace it, and speech from the app must not talk over it.
@@ -116,20 +115,17 @@ Evidence paths outside this repository (`yolo-spike/`, `spike-vision/`) refer to
 - **Evidence:** challenge rules section 4; project brief.
 - **Known issue:** the `en-US` system voice must be downloaded once, which failed on the emulator (`1002300008`); the app falls back to the Chinese voice there.
 
-## 14. Haptic cues and vibration usage types
+## 14. Haptic cues
 
-- **Decision:** Five short cues in `haptics/HapticPatterns.ets`: tap (button or tile activated), result ready, error, guidance pulse and arrived. Each uses a system preset when `vibrator.isSupportEffect` says the phone has it (`haptic.effect.soft`, `haptic.notice.success`, `haptic.notice.fail`, `haptic.clock.timer`, `haptic.effect.hard`) and otherwise a short timed pattern (15 ms; 30-70-30 ms; three 60 ms pulses; 40 ms; 120-80-120-80-200 ms). Tap, result and error use usage `touch`; the find guidance pulse and arrived use usage `notification`.
-- **Why:** Per the `@ohos.vibrator` reference, `touch`, `media`, `physicalFeedback`, `simulateReality` and `unknown` are muted when the user turns touch feedback off, while `alarm`, `ring`, `notification` and `communication` follow only the ring / vibrate / silent switch. Guidance vibration is the main output of Find for a blind user, so it must not disappear because touch feedback is off; `notification` is the closest honest category for a user-started cue. Interface ticks are plain touch feedback and should obey the user's setting. Vibration happens only on activation and results, never on focus, so it does not double the screen reader's own focus feedback.
-- **Alternatives considered:** `alarm` (also not touch-muted, but meant for alarms and may be treated with higher priority); `touch` for everything (guidance silently lost with touch feedback off); custom `VibrateFromPattern` sequences (API 18+, needs hardware support checks, more than these cues need).
-- **Evidence:** `haptics/Haptics.ets`, `haptics/HapticPatterns.ets`, `Haptics.test.ets`; `devecocli docs read "API参考/硬件/Sensor_Service_Kit_传感器服务/ArkTS_API/ohos_vibrator_振动_/js-apis-vibrator"` (Usage, HapticFeedback, VibratePreset).
-- **Not verified:** how the cues feel on a real phone (the emulator vibrator fails), preset lengths per device, and whether Do Not Disturb mutes `notification` vibration.
+- **Decision:** Guidance does not rely on vibration. Vibration did not work on the test phone, so Find an object and Find a word guide by speech only. The short cues in `haptics/` stay in the code but are not part of any feature description.
 
 ## 15. Injected test frames as a separate debug-only product
 
 - **Decision:** Test images from the Mac reach the app through a separate `frames` product and `entry` target. The target adds the source root `entry/src/frames` (HTTP client `InjectedFrameSource`) and sets `BuildProfile.FRAME_INJECTION`; the root `hvigorfile.ts` adds `ohos.permission.INTERNET` to the module only when the product is `frames`, and fails the build if `frames` is built in release mode. The `default` target compiles `entry/src/default`, whose `createFrameInjector()` returns nothing.
 - **Why:** The privacy claim "no network permission" must hold for what ships, and it is easiest to prove when the shipped package contains neither the permission nor the code. hvigor has no per-target `module.json5` and no per-build-mode permissions; per-target source roots (`source.sourceRoots`) and the documented `setModuleJsonOpt` hook in `hvigorfile.ts` are the supported mechanisms. A product, not just a target, keeps `assembleApp` for `default` from packing the debug HAP.
 - **Alternatives considered:** A runtime switch in the normal build (would need INTERNET in every build); keying only on build mode (the debug HAP of `default`, used for normal development, would then request INTERNET); a hidden gesture to turn injection on (not needed: the server being reachable is the switch, and only in the `frames` build).
-- **Evidence:** built `module.json` of `default` debug and release lists only CAMERA and VIBRATE, and its `modules.abc` does not contain `InjectedFrameSource`; the `frames` debug HAP lists INTERNET as well; `--product frames --build-mode release` fails in the `nodesEvaluated` hook.
+- **Evidence:** the `modules.abc` of `default` does not contain `InjectedFrameSource`; `--product frames --build-mode release` fails in the `nodesEvaluated` hook.
+- **Update:** since cloud search (decision 1), `entry/src/main/module.json5` requests INTERNET in every product, so the hook's permission step no longer changes anything. The frame HTTP client is still only in the `frames` product.
 
 ## 16. Rotated boxes in the on-device OCR
 
@@ -154,12 +150,14 @@ Evidence paths outside this repository (`yolo-spike/`, `spike-vision/`) refer to
 
 ## 17. Find as a state machine, describe on demand
 
-- **Decision:** Both find modes run `features/FindStateMachine.ets`: searching (soft tick every 1.5 s, "Searching for X. Turn slowly." at most every 4 s), acquired (seen in 2 of the last 3 frames: "X in view, on the left" and a distinct cue, once), guiding (pulse faster when more centred and bigger; a direction at most every 2.5 s and the same one at most every 5 s; "Hold steady." once when centred; "Move the phone closer slowly." at most every 4 s and 3 times), arrived (centred and the larger box side at least 45 % of the frame, or grown 2x since acquisition and at least 12 %, for 2 frames in a row: "X is right in front of you, within reach", strong cue, then quiet) and lost (missing for more than 1 s: "Lost X. Move back slowly."). Thresholds live in `FIND_OBJECT_TUNING` and `FIND_WORD_TUNING` in `common/Config.ets` (words: 30 % side or 3x growth, lost after 2.2 s because OCR runs every 700 ms). Describe surroundings speaks once per tap: at most 3 objects ranked by size x confidence x centredness, low-value classes (clothing, body parts) skipped. "Live description" is a separate toggle that announces only changes ("New: person on the right", "Bottle gone") at most every 3 s.
+- **Decision:** Both find modes run `features/FindStateMachine.ets`: searching ("Searching for X. Turn slowly." at most every 4 s), acquired (seen in 2 of the last 3 frames: "X in view, on the left", once), guiding (a direction at most every 2.5 s and the same one at most every 5 s; "Hold steady." once when centred; "Move the phone closer slowly." at most every 4 s and 3 times), arrived (centred and the larger box side at least 45 % of the frame, or grown 2x since acquisition and at least 12 %, for 2 frames in a row: "X is right in front of you, within reach", then quiet) and lost (missing for more than 1 s: "Lost X. Move back slowly."). Thresholds live in `FIND_OBJECT_TUNING`, `FIND_CLOUD_TUNING` and `FIND_WORD_TUNING` in `common/Config.ets` (words: 30 % side or 3x growth, lost after 2.2 s because OCR runs every 700 ms; cloud: acquired on one hit, lost after 4 s, arrival at 55 % side or 4x growth and at least 35 %, because SAM 3 answers in about a second and its boxes are tight). Describe surroundings speaks once per tap: at most 3 objects ranked by size x confidence x centredness, low-value classes (clothing, body parts) skipped. "Live description" is a separate toggle that announces only changes ("New: person on the right", "Bottle gone") at most every 3 s.
 - **Why:** Blindfold testing: find never said it had found the target (the old area-based closeness almost never reached "arrived" for tall bottles or wide words) and kept saying "move closer"; describe dictated the whole scene continuously.
 - **Evidence:** `FindStateMachine.test.ets`, `FindGuidance.test.ets`, `SceneTracker.test.ets`.
 - **Not verified:** the thresholds on a real phone.
 
 ## 18. Read text from a snapshot, in chunks that can be stopped; colour with white-balance correction
+
+- **Update:** Read text was later merged into Describe surroundings and the snapshot freeze was dropped: short text is said in the description, longer text is read aloud in chunks after it, with the same stoppable reading. The colour tile was removed; Describe names the colour of each object instead.
 
 - **Decision (Read text):** Reading works on the frame taken at the moment of the tap. The preview freezes on that frame with a "Snapshot" badge and the detected line boxes; the recognised text is shown at once below it, split into the same chunks that are spoken (lines joined into sentences, at most 240 characters, `speech/TextChunks.ets`). Chunks are spoken one at a time (`speech/ReadAloud.ets`): with Core Speech Kit the next chunk starts on `onComplete` with type 1 (playback finished); with the screen reader on, each chunk is a polite announcement and the next one is sent after an estimated duration, so the app never queues more than one chunk. While reading, the main button is "Stop reading"; stopping cancels the queue and sends an interrupting "Reading stopped.", which also cuts the screen reader's current chunk (its own two-finger tap pauses speech as well). Leaving the screen, opening the full text by hand or going back to the camera stops reading. "Read again" and "Back to camera" sit under the snapshot; the visible text is hidden from the screen reader because "Show full text" offers the same text line by line.
 - **Decision (Color):** `vision/ColorNamer.ets` is pure and takes an RGBA buffer and a region (`readColorInRegion`, so it can later name the colour of a detection box). It samples a 10x10 grid of cells over the central 28% square, drops specular highlights and deep shadows relative to the region's median, estimates the light from the rest of the frame (mean of gray-world and the brightest 10%), and corrects the region with that estimate. The correction is limited to the warm–cool axis (R/B up to about 2.6 warm, 1.7 cool) and a small green–magenta tint, and only 85% of it is applied. Cells are named in coarse names (red, orange, yellow, green, blue, purple, pink, brown, black, white, gray, beige; "light"/"dark" only when clear); white, gray and black use lightness relative to the brightest part of the frame. The answer is "probably X" when the dominant name covers less than 60% of the cells, is close to a boundary, or the light estimate hit its limit, and "mixed colours, mostly X and Y" below 40%.

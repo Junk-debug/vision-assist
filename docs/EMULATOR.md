@@ -21,7 +21,7 @@ How the two builds differ:
 | `entry` target | `default`, extra source root `entry/src/default` | `frames`, extra source root `entry/src/frames` |
 | `createFrameInjector()` | returns `undefined`, no network code is compiled in | returns `InjectedFrameSource` (HTTP client) |
 | `BuildProfile.FRAME_INJECTION` | `false` | `true` |
-| `ohos.permission.INTERNET` | not requested | added by the root `hvigorfile.ts` (`setModuleJsonOpt`) only for this product |
+| `ohos.permission.INTERNET` | requested (`entry/src/main/module.json5`, for cloud search in Find an object) | requested as well; the root `hvigorfile.ts` hook would add it if it were missing |
 | Release build mode | allowed | refused: the `hvigorfile.ts` hook fails the build |
 
 The app uses injected frames only when all of these hold: the build is the `frames` product, `BuildProfile.DEBUG` is true, `BuildProfile.FRAME_INJECTION` is true and the frame server answers. Every time a feature screen opens the camera, `FrameSourceSwitch` asks the server for a frame (700 ms timeout). If it answers, the screen shows the injected frames instead of the camera; otherwise the real camera is used. Leaving the screen and opening it again switches source. The log says which source was chosen: `hdc -t 127.0.0.1:5555 hilog | grep "frame source"`.
@@ -65,15 +65,15 @@ python3 tools/debug/frame_server.py status
 
 `play` takes files and folders (folders in name order, `.jpg`, `.jpeg`, `.png`, `.webp`, `.bmp`) and loops unless `--once` is given, in which case it stays on the last frame. The server is the clock: the app polls about every 120 ms and gets whatever frame is current, and continuous features still take frames at their own rate (Describe 250 ms, Find 150 ms, Find a word 700 ms, never overlapping). Images are decoded at most 1024 px on the long side, EXIF rotation is applied, and they are centred on a black square, so the boxes match the preview. Injected frames are not rotated or mirrored.
 
-**Example: warmer and colder with a bottle moving to the centre.** Take a photo with the bottle in the middle, then let the tool cut a sequence where the bottle starts near the left edge and ends in the centre, filling more of the frame towards the end:
+**Example: guidance with a bottle moving to the centre.** Take a photo with the bottle in the middle, then let the tool cut a sequence where the bottle starts near the left edge and ends in the centre, filling more of the frame towards the end:
 
 ```sh
 python3 tools/debug/frame_server.py pan ~/frames/bottle.jpg --out ~/frames/bottle-pan --steps 12 --start left --zoom 0.5 --end-zoom 0.3
 python3 tools/debug/frame_server.py play ~/frames/bottle-pan --fps 1 --once
 ```
 
-Open Find an object, choose Bottle: guidance starts with "turn left" and gets warmer until "Bottle is right in front of you". `--start` takes `left`, `right`, `top` or `bottom`; keep `--zoom` at 0.55 or below so the bottle can reach the edge. `pan` uses Pillow when it is installed and macOS `sips` otherwise.
+Open Find an object, choose Bottle: guidance says "Bottle in view, on the left", then "Turn left." and the other spoken directions until "Bottle is right in front of you, within reach". Without `sam3.json`, or with the emulator offline, Find uses the on-device model. `--start` takes `left`, `right`, `top` or `bottom`; keep `--zoom` at 0.55 or below so the bottle can reach the edge. `pan` uses Pillow when it is installed and macOS `sips` otherwise.
 
-Ideas for the other features: Read text and Find a word with a photo or screenshot of a sign or a page, Color check with a plain coloured image, Light check with a dark and a bright photo (the emulator light sensor reports 0 lux, so the camera fallback reads the injected image).
+Ideas for the other features: Describe surroundings and Find a word with a photo or screenshot of a sign or a page; the light status in Describe with a dark and a bright photo (the emulator light sensor reports 0 lux, so the camera fallback reads the injected image).
 
 Tests for the server: `cd tools/debug && python3 -m unittest test_frame_server`.

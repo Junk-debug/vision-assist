@@ -1,5 +1,7 @@
 # Installing on a physical HarmonyOS phone
 
+The app was tested on a Kirin 9000S HarmonyOS phone. On that phone the detector runs in fp16 on the CPU in about 55 to 190 ms per frame; both NNRt (NPU) drivers return a model without inputs for the float32 graphs, so the app falls back to the CPU.
+
 ## 1. Check the phone first
 
 The app is a native HarmonyOS app (`.hap`, ArkTS, API 20 or later). It runs only on **HarmonyOS 5 / HarmonyOS NEXT or later** (API 20+). Phones on HarmonyOS 4.x or EMUI are Android-based and cannot install a `.hap`. Check in Settings, About phone.
@@ -47,6 +49,8 @@ $HDC -t <serial> uninstall com.hackyeah.visionassist
 
 Allow camera access on first launch.
 
+For cloud search in Find an object, add `entry/src/main/resources/rawfile/sam3.json` with a Roboflow key before building (see "Cloud search (optional)" in the README). Without it the app stays fully offline.
+
 ## 5. Things to check on a real phone
 
 These could not be verified on the emulator:
@@ -56,6 +60,7 @@ These could not be verified on the emulator:
 | Frame rotation | Start "Describe surroundings": boxes must sit on the objects | Change the rotation per camera position in `entry/src/main/ets/common/Config.ets` (usually 90 for the back camera, 270 for the front) |
 | Front camera | Switch camera, boxes still on objects | Same setting, plus mirroring for the front camera |
 | System OCR | "Describe" status line shows the engine; on a phone it should be `system` | If it says `on-device`, Core Vision OCR is not available and the fallback is used |
-| Vibration | "Find an object", target "Person", point at someone | Guidance must still vibrate with touch feedback off (usage `notification`); it stops only in silent mode. Button taps, results and errors give short cues only while touch feedback is on |
+| Find an object guidance | "Find an object", target "Person", point at someone | Spoken guidance: "Person in view", directions, "Person is right in front of you, within reach" |
+| Cloud search | With `sam3.json`, Wi-Fi on, "Find an object", target Keys | The chip shows "Cloud search · Auto" and the app says "Online. Using cloud search."; turn on airplane mode and it says "Offline. Using the on-device model." and "Keys can only be found with cloud search. Connect to the internet." |
 | English voice | Any feature that speaks | The `en-US` voice may need a download over the network the first time; until then the app uses the Chinese voice |
 | Screen reader | Settings, Accessibility, ScreenReader, then navigate with swipes and double tap | Report which element is read wrongly |
