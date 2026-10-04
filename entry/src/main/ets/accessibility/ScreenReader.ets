@@ -5,6 +5,7 @@ import { describeError, log } from '../common/Logger';
 
 export class ScreenReader {
   private bundleName: string = '';
+  private lastState: boolean | undefined = undefined;
 
   async init(): Promise<void> {
     try {
@@ -15,8 +16,25 @@ export class ScreenReader {
   }
 
   isOn(): boolean {
+    const on = this.readerOpen() || this.touchGuideOpen();
+    if (on !== this.lastState) {
+      this.lastState = on;
+      log(`screen reader ${on ? 'on' : 'off'} (reader ${this.readerOpen()}, touch guide ${this.touchGuideOpen()})`);
+    }
+    return on;
+  }
+
+  private readerOpen(): boolean {
     try {
       return accessibility.isScreenReaderOpenSync();
+    } catch (error) {
+      return false;
+    }
+  }
+
+  private touchGuideOpen(): boolean {
+    try {
+      return accessibility.isOpenTouchGuideSync();
     } catch (error) {
       return false;
     }
