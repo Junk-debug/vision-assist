@@ -5,6 +5,7 @@ import { nextInChain } from '../accessibility/FocusChain';
 import { appServices } from '../app/AppServices';
 import { FullTextParams, Routes } from '../app/Routes';
 import { FOCUS_AFTER_TRANSITION_MS } from '../common/Config';
+import { DebugState } from '../common/DebugState';
 import { describeError, log } from '../common/Logger';
 import { Messages } from '../common/Messages';
 import { FeatureServices } from '../features/Feature';
@@ -46,6 +47,8 @@ export struct FeaturePage {
   @State injectedFrame: image.PixelMap | undefined = undefined;
   @State snapshot: image.PixelMap | undefined = undefined;
   @State readingIndex: number = -1;
+  @State debugOn: boolean = DebugState.enabled;
+  @State debugText: string = '';
   private info: FeatureInfo = FEATURE_CATALOG[0];
   private canvas: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true));
   private sceneOverlay: Overlay = new Overlay(this.canvas);
@@ -78,6 +81,9 @@ export struct FeaturePage {
       }, (text: string) => {
         this.resultText = text;
       });
+    services.setDebugSink((text: string) => {
+      this.debugText = text;
+    });
     services.setSnapshotSink((frame: image.PixelMap) => {
       this.showSnapshot(frame);
     });
@@ -140,6 +146,18 @@ export struct FeaturePage {
     this.sceneOverlay.clear();
     this.sceneOverlay.useFullViewport();
     this.sceneOverlay.setStyle(this.info.accent, false);
+  }
+
+  private hasDebug(): boolean {
+    return this.info.id === 'find' || this.info.id === 'findword';
+  }
+
+  private toggleDebug(): void {
+    DebugState.enabled = !DebugState.enabled;
+    this.debugOn = DebugState.enabled;
+    if (!this.debugOn) {
+      this.debugText = '';
+    }
   }
 
   private releaseSnapshot(): void {
@@ -572,6 +590,28 @@ export struct FeaturePage {
           elementId: ElementIds.FEATURE_STATUS,
           nextFocusId: this.nextOf(ElementIds.FEATURE_STATUS)
         })
+        if (this.hasDebug() && !this.needsTarget()) {
+          Text(this.debugOn ? 'Debug on' : 'Debug')
+            .fontSize(FontSize.caption)
+            .fontColor(Palette.onPrimary)
+            .backgroundColor(Palette.scrim)
+            .borderRadius(Radius.chip)
+            .padding({ left: Spacing.md, right: Spacing.md, top: Spacing.xs, bottom: Spacing.xs })
+            .accessibilityLevel('no')
+            .onClick(() => {
+              this.toggleDebug();
+            })
+          if (this.debugOn && this.debugText !== '') {
+            Text(this.debugText)
+              .fontSize(FontSize.caption)
+              .fontColor(Palette.onPrimary)
+              .backgroundColor(Palette.scrim)
+              .borderRadius(Radius.chip)
+              .padding(Spacing.sm)
+              .width('100%')
+              .accessibilityLevel('no')
+          }
+        }
         if (this.resultText !== '') {
           this.textPanel()
         }

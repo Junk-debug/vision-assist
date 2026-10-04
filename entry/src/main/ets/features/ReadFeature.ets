@@ -3,6 +3,7 @@ import { Feature, FeatureServices, PhotoAnalyzer } from './Feature';
 import { describeError, log } from '../common/Logger';
 import { Messages } from '../common/Messages';
 import { ContentRect } from '../vision/DetectionTypes';
+import { copyPixelMap } from '../vision/PixelCopy';
 import { normalizeFrame } from '../vision/FrameNormalizer';
 import { containRect } from '../photo/PhotoMath';
 import { summarizeText } from '../vision/text/TextSummary';
@@ -35,13 +36,11 @@ export class ReadFeature implements Feature, PhotoAnalyzer {
     }
     try {
       const frame = await this.services.camera.nextFrame();
-      let shown = false;
       try {
         await normalizeFrame(frame, this.services.camera.frameRotation());
         const info = await frame.getImageInfo();
         const content = containRect(info.size.width, info.size.height);
-        this.services.showSnapshot(frame);
-        shown = true;
+        this.services.showSnapshot(await copyPixelMap(frame));
         const result = await this.services.textReader.read(frame);
         if (result === undefined) {
           this.services.reportFailure(Messages.TEXT_READ_FAILED);
@@ -49,9 +48,7 @@ export class ReadFeature implements Feature, PhotoAnalyzer {
         }
         this.show(result, content, Messages.NO_TEXT_FOUND);
       } finally {
-        if (!shown) {
-          frame.release();
-        }
+        frame.release();
       }
     } catch (error) {
       log(`reading failed ${describeError(error)}`);
