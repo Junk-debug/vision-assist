@@ -151,3 +151,9 @@ Evidence paths outside this repository (`yolo-spike/`, `spike-vision/`) refer to
 
 - **Not verified:** the ArkTS port against the Python numbers on a device (the geometry is unit-tested); real camera photos with perspective.
 
+## 17. Find as a state machine, describe on demand
+
+- **Decision:** Both find modes run `features/FindStateMachine.ets`: searching (soft tick every 1.5 s, "Searching for X. Turn slowly." at most every 4 s), acquired (seen in 2 of the last 3 frames: "X in view, on the left" and a distinct cue, once), guiding (pulse faster when more centred and bigger; a direction at most every 2.5 s and the same one at most every 5 s; "Hold steady." once when centred; "Move the phone closer slowly." at most every 4 s and 3 times), arrived (centred and the larger box side at least 45 % of the frame, or grown 2x since acquisition and at least 12 %, for 2 frames in a row: "X is right in front of you, within reach", strong cue, then quiet) and lost (missing for more than 1 s: "Lost X. Move back slowly."). Thresholds live in `FIND_OBJECT_TUNING` and `FIND_WORD_TUNING` in `common/Config.ets` (words: 30 % side or 3x growth, lost after 2.2 s because OCR runs every 700 ms). Describe surroundings speaks once per tap: at most 3 objects ranked by size x confidence x centredness, low-value classes (clothing, body parts) skipped. "Live description" is a separate toggle that announces only changes ("New: person on the right", "Bottle gone") at most every 3 s.
+- **Why:** Blindfold testing: find never said it had found the target (the old area-based closeness almost never reached "arrived" for tall bottles or wide words) and kept saying "move closer"; describe dictated the whole scene continuously.
+- **Evidence:** `FindStateMachine.test.ets`, `FindGuidance.test.ets`, `SceneTracker.test.ets`.
+- **Not verified:** the thresholds on a real phone.
