@@ -11,7 +11,7 @@ import { FrameHandler, FrameSource, PreviewListener } from './FrameSource';
 
 const RECEIVER_CAPACITY: number = 4;
 const BYTES_PER_PIXEL: number = 4;
-const YUV_PLANES_FACTOR: number = 1.5;
+const YUV_DOWNSCALE: number = 2;
 
 export class CameraSource implements FrameSource {
   private manager?: camera.CameraManager;
@@ -159,10 +159,11 @@ export class CameraSource implements FrameSource {
         frame.release();
         return;
       }
-      if (this.handler !== undefined && this.gate.tryTake(Date.now())) {
+      const handler = this.handler;
+      if (handler !== undefined && this.gate.tryTake(Date.now())) {
         try {
           const pixelMap = await this.toPixelMap(frame, width, height);
-          await (this.handler as FrameHandler)(pixelMap);
+          await handler(pixelMap);
           pixelMap.release();
         } catch (error) {
           log(`frame handling failed ${describeError(error)}`);
@@ -200,9 +201,9 @@ export class CameraSource implements FrameSource {
       throw new Error(`empty YUV component ${component === null || component === undefined ? 'missing' : 'without buffer'}`);
     }
     const stride = component.rowStride > 0 ? component.rowStride : width;
-    const rgba = nv21ToRgba(new Uint8Array(component.byteBuffer), width, height, stride);
+    const rgba = nv21ToRgba(new Uint8Array(component.byteBuffer), width, height, stride, YUV_DOWNSCALE);
     const options: image.InitializationOptions = {
-      size: { width: width, height: height },
+      size: { width: Math.floor(width / YUV_DOWNSCALE), height: Math.floor(height / YUV_DOWNSCALE) },
       srcPixelFormat: image.PixelMapFormat.RGBA_8888,
       pixelFormat: image.PixelMapFormat.RGBA_8888,
       editable: true

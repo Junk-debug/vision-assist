@@ -136,7 +136,7 @@ Unit tests with fake engines are in `entry/src/test/TextEngines.test.ets`.
 | Pruning | Class head cut to 194 everyday classes (`tools/model/keep_indices.json`); kept scores are bit-identical to the full model |
 | Export | ONNX via `tools/model/export_subset.py`, with the DFL layer rewritten as softmax-sum because the converter could not infer the original conv |
 | Conversion | MindSpore Lite 2.7.0 `converter_lite` (Linux x86-64) run under qemu in Docker on Apple silicon, `tools/model/convert_to_ms.sh` |
-| File | `entry/src/main/resources/rawfile/yolov8s_oiv7_640_sub.ms`, 45 MB |
+| File | `entry/src/main/resources/rawfile/yolov8s_oiv7_416_sub.ms`, 45 MB |
 | Input | `[1,640,640,3]` float32 NHWC (as MindSpore Lite reports it; the ONNX source is NCHW `1x3x640x640`). `YoloDetector` reads the input shape at load time and fills the tensor in either layout. |
 | Output | `[1,198,8400]` channels first: `cx, cy, w, h` in input pixels, then 194 sigmoid scores |
 | Runtime | `mindSporeLite.loadModelFromBuffer`, CPU, 4 threads |

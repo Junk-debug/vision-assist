@@ -175,7 +175,7 @@ The debug-only `frames` product feeds still images or image sequences from the M
 
 ## Model
 
-`entry/src/main/resources/rawfile/yolov8s_oiv7_640_sub.ms` is committed so the app builds without any model tooling. To rebuild it, follow `tools/model/README.md`.
+`entry/src/main/resources/rawfile/yolov8s_oiv7_416_sub.ms` is committed so the app builds without any model tooling. To rebuild it, follow `tools/model/README.md`.
 
 ## License
 

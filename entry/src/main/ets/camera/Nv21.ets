@@ -1,11 +1,15 @@
-export function nv21ToRgba(source: Uint8Array, width: number, height: number, stride: number): ArrayBuffer {
-  const out = new Uint8Array(width * height * 4);
+export function nv21ToRgba(source: Uint8Array, width: number, height: number, stride: number, step: number = 1): ArrayBuffer {
+  const outW = Math.floor(width / step);
+  const outH = Math.floor(height / step);
+  const out = new Uint8Array(outW * outH * 4);
   const uvStart = stride * height;
   let target = 0;
-  for (let y = 0; y < height; y++) {
+  for (let oy = 0; oy < outH; oy++) {
+    const y = oy * step;
     const yRow = y * stride;
     const uvRow = uvStart + (y >> 1) * stride;
-    for (let x = 0; x < width; x++) {
+    for (let ox = 0; ox < outW; ox++) {
+      const x = ox * step;
       const luma = source[yRow + x];
       const uvIndex = uvRow + (x & ~1);
       const v = source[uvIndex] - 128;

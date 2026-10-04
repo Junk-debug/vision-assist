@@ -6,7 +6,7 @@ import { Detection, DetectionResult } from './DetectionTypes';
 import { log } from '../common/Logger';
 import { loadModel } from './ModelLoader';
 
-const MODEL_FILE: string = 'yolov8s_oiv7_640_sub.ms';
+const MODEL_FILE: string = 'yolov8s_oiv7_416_sub.ms';
 const CLASSES_FILE: string = 'classes.json';
 const PAD_VALUE: number = 114 / 255;
 const NMS_IOU: number = 0.45;

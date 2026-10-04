@@ -1,7 +1,7 @@
 import { image } from '@kit.ImageKit';
 import { ContentRect } from './DetectionTypes';
 
-const BORDER_LUMA_SUM: number = 90;
+const BORDER_LUMA_SUM: number = 24;
 const SAMPLE_STEP: number = 8;
 const EDGE_MARGIN: number = 4;
 
