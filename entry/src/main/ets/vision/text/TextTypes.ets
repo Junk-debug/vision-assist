@@ -17,10 +17,14 @@ export interface TextReadResult {
   elapsedMs: number;
 }
 
-export interface TextRecognizer {
+export interface TextEngine<F> {
   readonly name: string;
+  readonly prepareTimeoutMs: number;
+  readonly recognizeTimeoutMs: number;
   prepare(): Promise<boolean>;
-  isReady(): boolean;
-  recognize(frame: image.PixelMap): Promise<TextReadResult>;
+  recognize(frame: F): Promise<TextReadResult>;
   release(): void;
+}
+
+export interface TextRecognizer extends TextEngine<image.PixelMap> {
 }

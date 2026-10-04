@@ -126,7 +126,7 @@ Turn on Settings, Accessibility, ScreenReader. Swipe right moves to the next ele
 - A target of several words matches only consecutive words in reading order; the highlighted box is the union of their boxes.
 - The best-scoring match wins: exact, then one-letter difference, then substring.
 
-The match box feeds the same guidance as "Find an object" (`features/GuidanceCoach.ets`): pulse rate from how central and large the box is, "Warmer / Colder, turn left", and "right in front of you". The last guidance is kept for 1.5 s so the vibration continues between OCR runs. Without a match it says "Searching for X, move the phone slowly" at most every 3 s. Known limits: OCR confuses similar glyphs (0 and O are not unified) and the on-device OCR cuts by detected box, so a word inside a long box highlights the whole box.
+The match box feeds the same guidance as "Find an object" (`features/GuidanceCoach.ets`): pulse rate from how central and large the box is, "Warmer / Colder, turn left", and "right in front of you". The last guidance is kept for 1.5 s so the vibration continues between OCR runs. Without a match it says "Searching for X, move the phone slowly" at most every 3 s. Known limits: OCR confuses similar glyphs (0 and O are not unified) and the on-device OCR cuts by detected box, so a word inside a long box highlights the whole box. If the system OCR fails or times out (2.5 s) twice in a row it is switched off until the app restarts; the first runs after start-up may use the on-device OCR while the system one is still preparing.
 
 Unit tests for the pure logic live in `entry/src/test`. Run them with:
 
