@@ -1,3 +1,4 @@
+import { ElementIds } from '../../accessibility/ElementIds';
 import { FeatureInfo } from '../FeatureCatalog';
 import { FontSize, IconSize, Motion, Palette, Radius, Sizes, Spacing } from '../theme/Theme';
 
@@ -79,6 +80,7 @@ export struct FeatureTile {
       .accessibilityRole(AccessibilityRoleType.BUTTON)
       .accessibilityText(this.info.name)
       .accessibilityDescription(this.info.description)
+      .id(ElementIds.tile(this.info.id))
       .onTouch((event: TouchEvent) => {
         if (event.type === TouchType.Down) {
           this.pressed = true;

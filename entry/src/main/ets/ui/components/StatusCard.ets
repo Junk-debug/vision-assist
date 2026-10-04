@@ -4,6 +4,8 @@ import { FontSize, Palette, Radius, Sizes, Spacing } from '../theme/Theme';
 export struct StatusCard {
   @Prop status: string = '';
   @Prop detail: string = '';
+  @Prop elementId: string = '';
+  @Prop nextFocusId: string = '';
 
   build() {
     Column({ space: Spacing.xs }) {
@@ -15,6 +17,8 @@ export struct StatusCard {
         .textOverflow({ overflow: TextOverflow.Ellipsis })
         .width('100%')
         .accessibilityText(this.status)
+        .accessibilityNextFocusId(this.nextFocusId)
+        .id(this.elementId)
       if (this.detail !== '') {
         Text(this.detail)
           .fontSize(FontSize.caption)

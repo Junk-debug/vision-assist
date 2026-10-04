@@ -62,6 +62,7 @@ export class FontSize {
   static readonly status: number = 20;
   static readonly button: number = 18;
   static readonly caption: number = 13;
+  static readonly fullText: number = 26;
 }
 
 export class IconSize {
@@ -73,8 +74,10 @@ export class IconSize {
 export class Sizes {
   static readonly iconChip: number = 48;
   static readonly topBarButton: number = 48;
+  static readonly topBarSide: number = 72;
   static readonly minTouch: number = 48;
   static readonly primaryButton: number = 56;
+  static readonly secondaryBorder: number = 2;
   static readonly listRow: number = 64;
   static readonly statusMinHeight: number = 120;
   static readonly statusMaxLines: number = 4;
@@ -82,6 +85,8 @@ export class Sizes {
   static readonly overlayTargetStroke: number = 6;
   static readonly pressedScale: number = 0.97;
   static readonly maxContentWidth: number = 640;
+  static readonly fullTextLineHeight: number = 38;
+  static readonly sheetHeightRatio: number = 0.85;
 }
 
 export class TileLayout {

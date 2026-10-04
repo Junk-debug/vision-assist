@@ -15,6 +15,8 @@ export class Overlay {
   private height: number = 0;
   private accent: string = Palette.primary;
   private mirrored: boolean = false;
+  private visibleTop: number = VISIBLE_TOP;
+  private visibleHeight: number = VISIBLE_HEIGHT;
 
   constructor(canvas: CanvasRenderingContext2D) {
     this.canvas = canvas;
@@ -28,6 +30,16 @@ export class Overlay {
   setStyle(accent: string, mirrored: boolean): void {
     this.accent = accent;
     this.mirrored = mirrored;
+  }
+
+  useCameraViewport(): void {
+    this.visibleTop = VISIBLE_TOP;
+    this.visibleHeight = VISIBLE_HEIGHT;
+  }
+
+  useFullViewport(): void {
+    this.visibleTop = 0;
+    this.visibleHeight = 1;
   }
 
   clear(): void {
@@ -61,7 +73,7 @@ export class Overlay {
   }
 
   private mapY(value: number, content: ContentRect): number {
-    return ((content.top + value * content.height - VISIBLE_TOP) / VISIBLE_HEIGHT) * this.height;
+    return ((content.top + value * content.height - this.visibleTop) / this.visibleHeight) * this.height;
   }
 
   drawDetections(detections: Detection[], content: ContentRect, highlightLabel: string = ''): void {

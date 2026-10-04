@@ -1,9 +1,9 @@
+import { ElementIds } from '../accessibility/ElementIds';
+import { Messages } from '../common/Messages';
 import { FEATURE_CATALOG, FeatureInfo } from '../ui/FeatureCatalog';
 import { FeatureTile } from '../ui/components/FeatureTile';
+import { ScreenTitle } from '../ui/components/ScreenTitle';
 import { FontSize, Palette, Sizes, Spacing, TileLayout } from '../ui/theme/Theme';
-
-const APP_NAME: string = 'Vision Assist';
-const TAGLINE: string = 'Offline help for what\'s around you';
 
 class TileRow {
   readonly key: string;
@@ -58,12 +58,13 @@ export struct HomePage {
     Scroll() {
       Column({ space: Spacing.lg }) {
         Column({ space: Spacing.xs }) {
-          Text(APP_NAME)
-            .fontSize(FontSize.display)
-            .fontWeight(FontWeight.Medium)
-            .fontColor(Palette.textPrimary)
-            .accessibilityText(APP_NAME)
-          Text(TAGLINE)
+          ScreenTitle({
+            text: Messages.APP_NAME,
+            elementId: ElementIds.HOME_TITLE,
+            fontSize: FontSize.display,
+            centered: false
+          })
+          Text(Messages.TAGLINE)
             .fontSize(FontSize.subtitle)
             .fontColor(Palette.textSecondary)
         }

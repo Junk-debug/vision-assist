@@ -7,28 +7,37 @@ const SURFACE_ASPECT: number = 9 / 16;
 export struct CameraPreview {
   canvas: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true));
   sceneOverlay?: Overlay;
+  @Prop photoUri: string = '';
   onSurface: (surfaceId: string) => void = (surfaceId: string) => {};
   private xController: XComponentController = new XComponentController();
 
   build() {
     Stack({ alignContent: Alignment.Center }) {
-      XComponent({ type: XComponentType.SURFACE, controller: this.xController })
-        .onLoad(() => {
-          this.onSurface(this.xController.getXComponentSurfaceId());
-        })
-        .onAreaChange((oldArea: Area, newArea: Area) => {
-          const widthPx = Math.round(this.getUIContext().vp2px(Number(newArea.width)));
-          const surfaceHeight = Math.round(widthPx / SURFACE_ASPECT);
-          this.xController.setXComponentSurfaceRect({
-            offsetX: 0,
-            offsetY: -Math.round((surfaceHeight - widthPx) / 2),
-            surfaceWidth: widthPx,
-            surfaceHeight: surfaceHeight
-          });
-        })
-        .width('100%')
-        .height('100%')
-        .accessibilityLevel('no')
+      if (this.photoUri !== '') {
+        Image(this.photoUri)
+          .objectFit(ImageFit.Contain)
+          .width('100%')
+          .height('100%')
+          .accessibilityLevel('no')
+      } else {
+        XComponent({ type: XComponentType.SURFACE, controller: this.xController })
+          .onLoad(() => {
+            this.onSurface(this.xController.getXComponentSurfaceId());
+          })
+          .onAreaChange((oldArea: Area, newArea: Area) => {
+            const widthPx = Math.round(this.getUIContext().vp2px(Number(newArea.width)));
+            const surfaceHeight = Math.round(widthPx / SURFACE_ASPECT);
+            this.xController.setXComponentSurfaceRect({
+              offsetX: 0,
+              offsetY: -Math.round((surfaceHeight - widthPx) / 2),
+              surfaceWidth: widthPx,
+              surfaceHeight: surfaceHeight
+            });
+          })
+          .width('100%')
+          .height('100%')
+          .accessibilityLevel('no')
+      }
       Canvas(this.canvas)
         .width('100%')
         .height('100%')

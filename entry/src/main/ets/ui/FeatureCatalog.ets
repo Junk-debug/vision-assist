@@ -24,6 +24,8 @@ export interface FeatureInfo {
   targets: string[];
   targetPrompt: string;
   changeTargetLabel: string;
+  chooseTargetLabel: string;
+  photoInput: boolean;
 }
 
 export const FEATURE_CATALOG: FeatureInfo[] = [
@@ -38,12 +40,14 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     startLabel: 'Start describing',
     stopLabel: 'Stop describing',
     busyLabel: 'Describing',
-    actionHint: 'Double tap to switch the live description on or off',
+    actionHint: 'Switches the live description of what is in front of the camera on or off',
     readyText: 'Point the phone ahead.',
     picker: PickerKind.NONE,
     targets: [],
     targetPrompt: '',
-    changeTargetLabel: ''
+    changeTargetLabel: '',
+    chooseTargetLabel: '',
+    photoInput: true
   },
   {
     id: 'read',
@@ -56,12 +60,14 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     startLabel: 'Read now',
     stopLabel: 'Read now',
     busyLabel: 'Reading',
-    actionHint: 'Double tap to read the printed text in front of the camera',
+    actionHint: 'Reads the printed text in front of the camera',
     readyText: 'Hold the text about 30 centimetres away, then press Read now.',
     picker: PickerKind.NONE,
     targets: [],
     targetPrompt: '',
-    changeTargetLabel: ''
+    changeTargetLabel: '',
+    chooseTargetLabel: '',
+    photoInput: true
   },
   {
     id: 'find',
@@ -74,12 +80,14 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     startLabel: 'Start finding',
     stopLabel: 'Stop finding',
     busyLabel: 'Finding',
-    actionHint: 'Double tap to start or stop the search',
+    actionHint: 'Starts or stops the search',
     readyText: 'Move the phone slowly around the room.',
     picker: PickerKind.OBJECT,
     targets: FIND_TARGETS,
     targetPrompt: 'What do you want to find?',
-    changeTargetLabel: 'Choose another object'
+    changeTargetLabel: 'Choose another object',
+    chooseTargetLabel: 'Choose an object',
+    photoInput: false
   },
   {
     id: 'findword',
@@ -92,12 +100,14 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     startLabel: 'Start finding',
     stopLabel: 'Stop finding',
     busyLabel: 'Finding',
-    actionHint: 'Double tap to start or stop the search',
+    actionHint: 'Starts or stops the search',
     readyText: 'Move the phone slowly along the walls and doors.',
     picker: PickerKind.WORD,
     targets: WORD_TARGETS,
     targetPrompt: 'Which word do you want to find?',
-    changeTargetLabel: 'Choose another word'
+    changeTargetLabel: 'Choose another word',
+    chooseTargetLabel: 'Choose a word',
+    photoInput: false
   },
   {
     id: 'light',
@@ -110,12 +120,14 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     startLabel: 'Check the light',
     stopLabel: 'Check the light',
     busyLabel: 'Checking',
-    actionHint: 'Double tap to hear whether the light is on',
+    actionHint: 'Tells you whether the light is on',
     readyText: 'Point the phone into the room, then press Check the light.',
     picker: PickerKind.NONE,
     targets: [],
     targetPrompt: '',
-    changeTargetLabel: ''
+    changeTargetLabel: '',
+    chooseTargetLabel: '',
+    photoInput: false
   },
   {
     id: 'color',
@@ -128,12 +140,14 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     startLabel: 'Check the color',
     stopLabel: 'Check the color',
     busyLabel: 'Checking',
-    actionHint: 'Double tap to hear the color of what is in the middle of the camera view',
+    actionHint: 'Names the color of what is in the middle of the camera view',
     readyText: 'Hold the item close to the camera, then press Check the color.',
     picker: PickerKind.NONE,
     targets: [],
     targetPrompt: '',
-    changeTargetLabel: ''
+    changeTargetLabel: '',
+    chooseTargetLabel: '',
+    photoInput: false
   }
 ];
 

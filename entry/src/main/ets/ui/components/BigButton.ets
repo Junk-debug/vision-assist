@@ -12,6 +12,8 @@ export struct BigButton {
   @Prop hint: string = '';
   @Prop tone: ButtonTone = ButtonTone.PRIMARY;
   @Prop disabled: boolean = false;
+  @Prop elementId: string = '';
+  @Prop nextFocusId: string = '';
   @State pressed: boolean = false;
   onTap: () => void = () => {};
 
@@ -46,12 +48,15 @@ export struct BigButton {
     .padding({ left: Spacing.xl, right: Spacing.xl, top: Spacing.md, bottom: Spacing.md })
     .borderRadius(Radius.button)
     .backgroundColor(this.fillColor())
+    .border({ width: this.tone === ButtonTone.SECONDARY && !this.disabled ? Sizes.secondaryBorder : 0, color: Palette.primary })
     .scale({ x: this.pressed ? Sizes.pressedScale : 1, y: this.pressed ? Sizes.pressedScale : 1 })
     .animation({ duration: Motion.pressMs })
     .accessibilityGroup(true)
     .accessibilityRole(AccessibilityRoleType.BUTTON)
     .accessibilityText(this.label)
     .accessibilityDescription(this.hint)
+    .accessibilityNextFocusId(this.nextFocusId)
+    .id(this.elementId)
     .enabled(!this.disabled)
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {

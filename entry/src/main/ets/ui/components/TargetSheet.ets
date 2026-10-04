@@ -1,4 +1,7 @@
-import { BigButton } from './BigButton';
+import { BigButton, ButtonTone } from './BigButton';
+import { ScreenTitle } from './ScreenTitle';
+import { ElementIds } from '../../accessibility/ElementIds';
+import { Messages } from '../../common/Messages';
 import { FontSize, IconSize, Palette, Radius, Sizes, Spacing } from '../theme/Theme';
 
 const WORD_MAX_LENGTH: number = 24;
@@ -10,6 +13,7 @@ export struct TargetSheet {
   @Prop allowTyping: boolean = false;
   @State typed: string = '';
   onPick: (target: string) => void = (target: string) => {};
+  onCancel: () => void = () => {};
 
   @Builder
   row(label: string, last: boolean) {
@@ -28,14 +32,14 @@ export struct TargetSheet {
       .constraintSize({ minHeight: Sizes.listRow })
       .padding({ top: Spacing.sm, bottom: Spacing.sm })
       if (!last) {
-        Divider().color(Palette.divider).strokeWidth(1)
+        Divider().color(Palette.divider).strokeWidth(1).accessibilityLevel('no')
       }
     }
     .width('100%')
     .accessibilityGroup(true)
     .accessibilityRole(AccessibilityRoleType.BUTTON)
     .accessibilityText(label)
-    .accessibilityDescription(`Start looking for ${label}`)
+    .accessibilityDescription(Messages.pickTargetHint(label))
     .onClick(() => {
       this.onPick(label);
     })
@@ -43,14 +47,10 @@ export struct TargetSheet {
 
   build() {
     Column({ space: Spacing.md }) {
-      Text(this.prompt)
-        .fontSize(FontSize.title)
-        .fontWeight(FontWeight.Medium)
-        .fontColor(Palette.textPrimary)
-        .width('100%')
-        .padding({ top: Spacing.xl })
+      ScreenTitle({ text: this.prompt, elementId: ElementIds.SHEET_TITLE, centered: false })
+        .padding({ top: Spacing.sm })
       if (this.allowTyping) {
-        TextInput({ text: this.typed, placeholder: 'Type a word' })
+        TextInput({ text: this.typed, placeholder: Messages.TYPE_A_WORD })
           .fontSize(FontSize.tileTitle)
           .fontColor(Palette.textPrimary)
           .placeholderColor(Palette.textSecondary)
@@ -61,8 +61,8 @@ export struct TargetSheet {
           .padding({ left: Spacing.lg, right: Spacing.lg })
           .maxLength(WORD_MAX_LENGTH)
           .enterKeyType(EnterKeyType.Go)
-          .accessibilityText('Word to find')
-          .accessibilityDescription('Type the word you want to find, then press Start')
+          .accessibilityText(Messages.WORD_FIELD_LABEL)
+          .accessibilityDescription(Messages.WORD_FIELD_HINT)
           .onChange((value: string) => {
             this.typed = value;
           })
@@ -70,13 +70,13 @@ export struct TargetSheet {
             this.onPick(this.typed);
           })
         BigButton({
-          label: 'Start',
-          hint: 'Start looking for the typed word',
+          label: Messages.START,
+          hint: Messages.START_TYPED_HINT,
           onTap: () => {
             this.onPick(this.typed);
           }
         })
-        Text('Or choose one')
+        Text(Messages.OR_CHOOSE_ONE)
           .fontSize(FontSize.body)
           .fontColor(Palette.textSecondary)
           .width('100%')
@@ -92,12 +92,19 @@ export struct TargetSheet {
       .layoutWeight(1)
       .width('100%')
       .scrollBar(BarState.Auto)
+      BigButton({
+        label: Messages.CANCEL,
+        hint: Messages.CANCEL_PICKER_HINT,
+        tone: ButtonTone.SECONDARY,
+        elementId: ElementIds.SHEET_CANCEL,
+        onTap: () => {
+          this.onCancel();
+        }
+      })
     }
     .width('100%')
-    .layoutWeight(1)
-    .padding({ left: Spacing.xl, right: Spacing.xl, bottom: Spacing.lg })
+    .height('100%')
+    .padding({ left: Spacing.xl, right: Spacing.xl, top: Spacing.md, bottom: Spacing.lg })
     .backgroundColor(Palette.card)
-    .borderRadius({ topLeft: Radius.sheet, topRight: Radius.sheet })
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 }

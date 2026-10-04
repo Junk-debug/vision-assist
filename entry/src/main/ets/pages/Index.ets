@@ -1,10 +1,10 @@
 import { common } from '@kit.AbilityKit';
 import { appServices } from '../app/AppServices';
 import { Palette } from '../ui/theme/Theme';
+import { FullTextParams, Routes } from '../app/Routes';
 import { FeaturePage } from './FeaturePage';
+import { FullTextPage } from './FullTextPage';
 import { HomePage } from './HomePage';
-
-const FEATURE_ROUTE: string = 'feature';
 
 @Entry
 @Component
@@ -21,8 +21,10 @@ struct Index {
 
   @Builder
   routes(name: string, param: Object) {
-    if (name === FEATURE_ROUTE) {
+    if (name === Routes.FEATURE) {
       FeaturePage({ featureId: param as string })
+    } else if (name === Routes.FULL_TEXT) {
+      FullTextPage({ params: param as FullTextParams })
     }
   }
 
@@ -30,7 +32,7 @@ struct Index {
     Navigation(this.pathStack) {
       HomePage({
         onOpen: (id: string) => {
-          this.pathStack.pushPathByName(FEATURE_ROUTE, id);
+          this.pathStack.pushPathByName(Routes.FEATURE, id);
         }
       })
     }

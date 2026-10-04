@@ -50,6 +50,17 @@ export class AppServices {
     }
   }
 
+  async requestCameraInSettings(context: common.UIAbilityContext): Promise<boolean> {
+    const manager = abilityAccessCtrl.createAtManager();
+    try {
+      const statuses = await manager.requestPermissionOnSetting(context, [CAMERA_PERMISSION]);
+      return statuses.length > 0 && statuses[0] === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED;
+    } catch (error) {
+      log(`camera permission in settings failed ${describeError(error)}`);
+      return false;
+    }
+  }
+
   release(): void {
     this.camera.stop();
     this.textReader.release();

@@ -5,6 +5,8 @@ export struct RoundIconButton {
   icon: Resource = $r('sys.symbol.chevron_left');
   @Prop label: string = '';
   @Prop hint: string = '';
+  @Prop elementId: string = '';
+  @Prop nextFocusId: string = '';
   @State pressed: boolean = false;
   onTap: () => void = () => {};
 
@@ -25,6 +27,8 @@ export struct RoundIconButton {
     .accessibilityRole(AccessibilityRoleType.BUTTON)
     .accessibilityText(this.label)
     .accessibilityDescription(this.hint)
+    .accessibilityNextFocusId(this.nextFocusId)
+    .id(this.elementId)
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
         this.pressed = true;
