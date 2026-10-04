@@ -4,7 +4,6 @@ import { Feature, FeatureServices, LiveMode, PhotoAnalyzer } from './Feature';
 import { FindFeature } from './FindFeature';
 import { FindWordFeature } from './FindWordFeature';
 import { LightFeature } from './LightFeature';
-import { ReadFeature } from './ReadFeature';
 
 export interface FeatureBinding {
   feature: Feature;
@@ -25,10 +24,6 @@ export function createFeature(id: string, services: FeatureServices): FeatureBin
   if (id === 'findword') {
     const findWord = new FindWordFeature(services);
     return { feature: findWord, setTarget: (target: string): void => findWord.setTarget(target) };
-  }
-  if (id === 'read') {
-    const read = new ReadFeature(services);
-    return { feature: read, setTarget: (target: string): void => {}, photo: read };
   }
   if (id === 'light') {
     return plain(new LightFeature(services));

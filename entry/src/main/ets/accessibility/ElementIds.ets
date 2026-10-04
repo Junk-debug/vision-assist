@@ -9,8 +9,6 @@ export class ElementIds {
   static readonly FEATURE_TARGET: string = 'feature-target';
   static readonly FEATURE_SWITCH: string = 'feature-switch';
   static readonly FEATURE_BACK: string = 'feature-back';
-  static readonly SNAPSHOT_READ_AGAIN: string = 'snapshot-read-again';
-  static readonly SNAPSHOT_BACK: string = 'snapshot-back';
   static readonly SHEET_TITLE: string = 'sheet-title';
   static readonly SHEET_CANCEL: string = 'sheet-cancel';
   static readonly FULL_TEXT_TITLE: string = 'full-text-title';

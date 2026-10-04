@@ -15,7 +15,6 @@ import { analyzePhotoUri } from '../photo/PhotoAnalysis';
 import { pickPhoto } from '../photo/PhotoPicker';
 import { Priority } from '../speech/Narrator';
 import { ReadingListener } from '../speech/ReadAloud';
-import { splitIntoChunks } from '../speech/TextChunks';
 import { FEATURE_CATALOG, FeatureInfo, findFeatureInfo, PickerKind } from '../ui/FeatureCatalog';
 import { Overlay } from '../ui/Overlay';
 import { BigButton, ButtonTone } from '../ui/components/BigButton';
@@ -25,9 +24,6 @@ import { ScreenFrame } from '../ui/components/ScreenFrame';
 import { StatusCard } from '../ui/components/StatusCard';
 import { TargetSheet } from '../ui/components/TargetSheet';
 import { FontSize, Palette, Radius, Sizes, Spacing } from '../ui/theme/Theme';
-
-const TEXT_PREVIEW_WIDTH: string = '55%';
-const TEXT_PANEL_MIN_HEIGHT: number = 96;
 
 @Component
 export struct FeaturePage {
@@ -45,7 +41,6 @@ export struct FeaturePage {
   @State sheetShown: boolean = false;
   @State permissionDenied: boolean = false;
   @State injectedFrame: image.PixelMap | undefined = undefined;
-  @State snapshot: image.PixelMap | undefined = undefined;
   @State readingIndex: number = -1;
   @State debugOn: boolean = DebugState.enabled;
   @State debugText: string = '';
@@ -84,9 +79,6 @@ export struct FeaturePage {
     services.setDebugSink((text: string) => {
       this.debugText = text;
     });
-    services.setSnapshotSink((frame: image.PixelMap) => {
-      this.showSnapshot(frame);
-    });
     this.binding = createFeature(this.info.id, services);
     appServices.narrator.reader.addListener(this.readingListener);
     this.sceneOverlay.setStyle(this.info.accent, false);
@@ -98,7 +90,6 @@ export struct FeaturePage {
   aboutToDisappear(): void {
     appServices.narrator.reader.removeListener(this.readingListener);
     appServices.narrator.stopReading();
-    this.releaseSnapshot();
     this.stopFeature();
     this.closeCamera();
     appServices.camera.setPreviewListener(undefined);
@@ -140,14 +131,6 @@ export struct FeaturePage {
     return this.readingIndex >= 0;
   }
 
-  private showSnapshot(frame: image.PixelMap): void {
-    this.releaseSnapshot();
-    this.snapshot = frame;
-    this.sceneOverlay.clear();
-    this.sceneOverlay.useFullViewport();
-    this.sceneOverlay.setStyle(this.info.accent, false);
-  }
-
   private hasDebug(): boolean {
     return this.info.id === 'find' || this.info.id === 'findword';
   }
@@ -160,32 +143,9 @@ export struct FeaturePage {
     }
   }
 
-  private releaseSnapshot(): void {
-    const old = this.snapshot;
-    this.snapshot = undefined;
-    old?.release();
-  }
-
-  private closeSnapshot(): void {
-    appServices.narrator.stopReading();
-    this.releaseSnapshot();
-    this.sceneOverlay.clear();
-    this.resultText = '';
-    this.detail = '';
-    this.syncCamera();
-    this.status = this.info.readyText;
-    appServices.narrator.screenReader.focus(ElementIds.FEATURE_PRIMARY, FOCUS_AFTER_TRANSITION_MS);
-  }
-
   private stopReading(): void {
     appServices.narrator.stopReading();
     appServices.narrator.announce(Messages.READING_STOPPED, Priority.URGENT);
-  }
-
-  private readAgain(): void {
-    if (this.resultText !== '') {
-      appServices.narrator.readText(this.resultText);
-    }
   }
 
   private onSurface(surfaceId: string): void {
@@ -325,6 +285,7 @@ export struct FeaturePage {
       this.report(Messages.MODEL_LOADING);
       return;
     }
+    appServices.narrator.stopReading();
     this.liveOn = true;
     await live.startLive();
     appServices.narrator.announce(Messages.LIVE_STARTED);
@@ -416,10 +377,7 @@ export struct FeaturePage {
       return;
     }
     this.closeCamera();
-    this.releaseSnapshot();
-    this.resultText = '';
-    this.detail = '';
-    this.sceneOverlay.clear();
+
     this.sceneOverlay.useFullViewport();
     this.sceneOverlay.setStyle(this.info.accent, false);
     this.photoUri = uri;
@@ -430,9 +388,6 @@ export struct FeaturePage {
     if (!analysed) {
       this.reportFailure(Messages.PHOTO_OPEN_FAILED);
       return;
-    }
-    if (this.resultText !== '') {
-      this.openFullText(true);
     }
   }
 
@@ -489,9 +444,6 @@ export struct FeaturePage {
     if (this.photoMode()) {
       return Messages.BACK_TO_CAMERA;
     }
-    if (this.snapshot !== undefined && !this.busy) {
-      return Messages.READ_NEW_TEXT;
-    }
     if (this.continuous()) {
       return this.running ? this.info.stopLabel : this.info.startLabel;
     }
@@ -511,9 +463,6 @@ export struct FeaturePage {
     if (this.photoMode()) {
       return Messages.BACK_TO_CAMERA_HINT;
     }
-    if (this.snapshot !== undefined) {
-      return Messages.READ_NEW_TEXT_HINT;
-    }
     return Messages.targetHint(this.info.actionHint, this.target);
   }
 
@@ -521,12 +470,6 @@ export struct FeaturePage {
     const chain: string[] = [ElementIds.FEATURE_TITLE, ElementIds.FEATURE_STATUS, ElementIds.FEATURE_PRIMARY];
     if (this.showLive()) {
       chain.push(ElementIds.FEATURE_LIVE);
-    }
-    if (this.snapshot !== undefined && this.resultText !== '') {
-      chain.push(ElementIds.SNAPSHOT_READ_AGAIN);
-    }
-    if (this.snapshot !== undefined) {
-      chain.push(ElementIds.SNAPSHOT_BACK);
     }
     if (this.resultText !== '') {
       chain.push(ElementIds.FEATURE_FULL_TEXT);
@@ -574,14 +517,12 @@ export struct FeaturePage {
               sceneOverlay: this.sceneOverlay,
               photoUri: this.photoUri,
               injectedFrame: this.injectedFrame,
-              snapshot: this.snapshot,
-              badge: this.snapshot !== undefined ? Messages.SNAPSHOT : '',
               onSurface: (surfaceId: string) => {
                 this.onSurface(surfaceId);
               }
             })
           }
-          .width(this.resultText !== '' ? TEXT_PREVIEW_WIDTH : '100%')
+          .width('100%')
           .flexShrink(1)
         }
         StatusCard({
@@ -612,9 +553,6 @@ export struct FeaturePage {
               .accessibilityLevel('no')
           }
         }
-        if (this.resultText !== '') {
-          this.textPanel()
-        }
       }
       .layoutWeight(1)
       .width('100%')
@@ -640,35 +578,6 @@ export struct FeaturePage {
             this.toggleLive();
           }
         })
-      }
-      if (this.snapshot !== undefined) {
-        Row({ space: Spacing.md }) {
-          if (this.resultText !== '') {
-            BigButton({
-              label: Messages.READ_AGAIN,
-              hint: Messages.SNAPSHOT_READ_AGAIN_HINT,
-              tone: ButtonTone.SECONDARY,
-              elementId: ElementIds.SNAPSHOT_READ_AGAIN,
-              nextFocusId: this.nextOf(ElementIds.SNAPSHOT_READ_AGAIN),
-              onTap: () => {
-                this.readAgain();
-              }
-            })
-            .layoutWeight(1)
-          }
-          BigButton({
-            label: Messages.SNAPSHOT_BACK,
-            hint: Messages.SNAPSHOT_BACK_HINT,
-            tone: ButtonTone.SECONDARY,
-            elementId: ElementIds.SNAPSHOT_BACK,
-            nextFocusId: this.nextOf(ElementIds.SNAPSHOT_BACK),
-            onTap: () => {
-              this.closeSnapshot();
-            }
-          })
-          .layoutWeight(1)
-        }
-        .width('100%')
       }
       if (this.resultText !== '') {
         BigButton({
@@ -710,34 +619,6 @@ export struct FeaturePage {
     .layoutWeight(1)
     .width('100%')
     .padding({ left: Spacing.page, right: Spacing.page, bottom: Spacing.lg })
-  }
-
-  @Builder
-  textPanel() {
-    Scroll() {
-      Column({ space: Spacing.sm }) {
-        ForEach(splitIntoChunks(this.resultText), (chunk: string, index: number) => {
-          Text(chunk)
-            .fontSize(FontSize.subtitle)
-            .lineHeight(Sizes.fullTextLineHeight - Spacing.md)
-            .fontColor(Palette.textPrimary)
-            .width('100%')
-            .padding(Spacing.xs)
-            .borderRadius(Radius.chip)
-            .backgroundColor(index === this.readingIndex ? Palette.inputFill : Palette.card)
-        }, (chunk: string, index: number) => `${index}:${chunk}`)
-      }
-      .width('100%')
-      .padding(Spacing.md)
-    }
-    .layoutWeight(1)
-    .width('100%')
-    .constraintSize({ minHeight: TEXT_PANEL_MIN_HEIGHT })
-    .align(Alignment.Top)
-    .scrollBar(BarState.Auto)
-    .borderRadius(Radius.card)
-    .backgroundColor(Palette.card)
-    .accessibilityLevel('no-hide-descendants')
   }
 
   @Builder
@@ -806,6 +687,7 @@ export struct FeaturePage {
     })
     .onHidden(() => {
       this.visible = false;
+      appServices.narrator.stopReading();
       this.stopFeature();
       this.closeCamera();
     })

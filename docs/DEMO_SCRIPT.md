@@ -12,7 +12,7 @@ Target length: 2 to 2.5 minutes. One presenter wears a blindfold and uses only t
 | 3 | 0:35-0:55 | Describe surroundings | Sits at a table with a chair and a bottle. Opens Describe surroundings, double taps Start, pans slowly. | "Chair ahead, bottle on the left" (actual wording depends on the scene) | Subtitles of the spoken output |
 | 4 | 0:55-1:30 | Find an object (climax) | Back, opens Find an object, picks Bottle. Moves the phone slowly, follows the vibration and the hints, reaches out and grabs the bottle. | Pulse speeds up, "Warmer. turn left", then a long vibration and "Bottle is right in front of you." | "Vibration gets faster as the bottle gets closer" |
 | 5 | 1:30-1:50 | Find a word | Opens Find a word, picks EXIT, turns toward the wall, walks to the printed EXIT sign. | "Searching for exit, move the phone slowly", then "Warmer...", "EXIT is right in front of you." | Spotter walks beside the presenter |
-| 6 | 1:50-2:05 | Read text | Holds a letter or a parcel label, opens Read text, double taps. | Reads the printed text aloud | Use a prepared letter with no real names or addresses |
+| 6 | 1:50-2:05 | Describe surroundings (text) | Holds a letter or a parcel label, opens Describe surroundings, double taps. | Reads the printed text aloud | Use a prepared letter with no real names or addresses |
 | 7 | 2:05-2:15 | Light check and colour | Light check: "The light is on. Normal indoor lighting. About N lux." Then What color is this? on a coloured object: "red" (or the actual colour). | | Quick cuts between the two are fine; no cuts inside each |
 | 8 | 2:15-2:30 | Reveal | Removes the blindfold: "Everything you saw runs on the phone. No cloud." | - | Then 20-30 s technical screen (below) |
 

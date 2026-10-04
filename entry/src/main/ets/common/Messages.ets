@@ -52,7 +52,7 @@ export class Messages {
   static readonly NOTHING_RECOGNISED: string = 'Nothing recognised. Point the phone at objects in good light.';
   static readonly NOTHING_TO_DESCRIBE: string = 'Nothing recognised. Try pointing at a table or a door.';
   static readonly TEXT_AHEAD: string = 'Text ahead.';
-  static readonly TEXT_AHEAD_LONG: string = 'Text ahead. Open Read text to hear it.';
+  static readonly TEXT_AHEAD_LONG: string = 'Text ahead. Reading it now.';
   static readonly LIVE_DESCRIPTION: string = 'Live description';
   static readonly STOP_LIVE_DESCRIPTION: string = 'Stop live description';
   static readonly LIVE_DESCRIPTION_HINT: string = 'Keeps watching and announces only what changes';
@@ -82,10 +82,6 @@ export class Messages {
   static readonly LUMA_NORMAL: string = 'The light looks on. Normal lighting.';
   static readonly LUMA_BRIGHT: string = 'It looks very bright.';
 
-  static readonly READING_TEXT: string = 'Reading text.';
-  static readonly TEXT_READ_FAILED: string = 'Text could not be read. Hold the phone steady and try again.';
-  static readonly NO_TEXT_FOUND: string =
-    'No text found. Hold the phone 20 to 30 centimetres from the text and try again.';
   static readonly SHOW_FULL_TEXT: string = 'Show full text';
   static readonly SHOW_FULL_TEXT_HINT: string = 'Opens the whole text in large print';
   static readonly FULL_TEXT_TITLE: string = 'Full text';
@@ -94,12 +90,6 @@ export class Messages {
   static readonly STOP_READING: string = 'Stop reading';
   static readonly STOP_READING_HINT: string = 'Stops reading the text aloud';
   static readonly READING_STOPPED: string = 'Reading stopped.';
-  static readonly SNAPSHOT: string = 'Snapshot';
-  static readonly READ_NEW_TEXT: string = 'Read new text';
-  static readonly READ_NEW_TEXT_HINT: string = 'Takes a new snapshot from the camera and reads it';
-  static readonly SNAPSHOT_BACK: string = 'Back to camera';
-  static readonly SNAPSHOT_BACK_HINT: string = 'Closes the snapshot and shows the live camera again';
-  static readonly SNAPSHOT_READ_AGAIN_HINT: string = 'Reads the text of this snapshot aloud again';
 
   static readonly USE_PHOTO: string = 'Use a photo instead';
   static readonly USE_ANOTHER_PHOTO: string = 'Use another photo';
@@ -112,7 +102,6 @@ export class Messages {
   static readonly ANALYSING_PHOTO: string = 'Checking the photo.';
   static readonly NOTHING_IN_PHOTO: string =
     'Nothing recognised in this photo. Choose a photo with clear, well lit objects.';
-  static readonly NO_TEXT_IN_PHOTO: string = 'No text found in this photo. Choose a sharper photo of printed text.';
 
   static screenWithPrompt(name: string, prompt: string): string {
     return `${name}. ${prompt}`;

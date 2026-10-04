@@ -113,6 +113,10 @@ export class Narrator implements ChunkSpeaker {
     this.reader.start(splitIntoChunks(text));
   }
 
+  readChunks(chunks: string[]): void {
+    this.reader.start(chunks);
+  }
+
   stopReading(): boolean {
     return this.reader.stop();
   }

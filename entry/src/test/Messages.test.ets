@@ -1,17 +1,27 @@
 import { describe, it, expect } from '@ohos/hypium';
 import { LightLevel, Messages } from '../main/ets/common/Messages';
-import { describeWithText, textHintFor } from '../main/ets/vision/text/TextHint';
+import { describeWithText, planDescription, textHintFor } from '../main/ets/vision/text/TextHint';
 
 export default function messagesTest() {
   describe('messages', () => {
     it('buildsTextHints', 0, () => {
       expect(textHintFor(' EXIT \n')).assertEqual('Text ahead: EXIT.');
       expect(textHintFor('one two three four five six')).assertEqual('Text ahead: one two three four five six.');
-      expect(textHintFor('one two three four five six seven')).assertEqual('Text ahead. Open Read text to hear it.');
+      expect(textHintFor('one two three four five six seven')).assertEqual('Text ahead. Reading it now.');
       expect(textHintFor('  ')).assertEqual('');
       expect(textHintFor(undefined)).assertEqual('');
       expect(describeWithText('Door ahead.', 'Text ahead: EXIT.')).assertEqual('Door ahead. Text ahead: EXIT.');
       expect(describeWithText('', 'Text ahead.')).assertEqual('Text ahead.');
+    });
+    it('plansDescriptionWithText', 0, () => {
+      const short = planDescription('Door ahead.', 'EXIT');
+      expect(short.sentence).assertEqual('Door ahead. Text ahead: EXIT.');
+      expect(short.readChunks.length).assertEqual(0);
+      const long = planDescription('Door ahead.', 'one two three four five six seven. Eight nine.');
+      expect(long.sentence).assertEqual('Door ahead. Text ahead. Reading it now.');
+      expect(long.readChunks[0]).assertEqual(long.sentence);
+      expect(long.readChunks.length > 1).assertTrue();
+      expect(planDescription('', undefined).sentence).assertEqual('');
     });
     it('countsObjectsAndPeople', 0, () => {
       expect(Messages.objectCount('cup', 1)).assertEqual('cup');
@@ -79,8 +89,8 @@ export default function messagesTest() {
     it('failuresSayWhatToDoNext', 0, () => {
       const failures: string[] = [Messages.CAMERA_PERMISSION_NEEDED, Messages.CAMERA_START_FAILED, Messages.CAMERA_NOT_READY,
         Messages.CAMERA_SWITCH_FAILED, Messages.MODEL_LOAD_FAILED, Messages.MODEL_LOADING, Messages.TEXT_READER_UNAVAILABLE,
-        Messages.TEXT_READ_FAILED, Messages.NO_TEXT_FOUND, Messages.COLOR_FAILED, Messages.LIGHT_FAILED,
-        Messages.PHOTO_OPEN_FAILED, Messages.PICKER_OPEN_FAILED, Messages.NOTHING_IN_PHOTO, Messages.NO_TEXT_IN_PHOTO,
+        Messages.COLOR_FAILED, Messages.LIGHT_FAILED,
+        Messages.PHOTO_OPEN_FAILED, Messages.PICKER_OPEN_FAILED, Messages.NOTHING_IN_PHOTO,
         Messages.NOTHING_RECOGNISED, Messages.NOTHING_TO_DESCRIBE];
       for (const failure of failures) {
         const sentences = failure.split('. ').filter((part: string) => part.trim().length > 0);

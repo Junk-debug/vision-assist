@@ -12,16 +12,16 @@ Built for the HackYeah 2026 Huawei challenge "Imagine What's Next" (Human-Centri
 | Screen reader support | Heading-first focus order, polite announcements, modal pickers; checked through the accessibility tree, see [Accessibility](#accessibility) |
 | Front and back camera | Switch button on every feature screen; boxes land on the objects with both emulator cameras |
 | Find an object with "warmer / colder" vibration | Implemented, runs on the emulator; vibration not verified (the emulator vibrator reports "Device operation failed") |
-| Read printed text | Implemented with an on-device OCR fallback (Core Vision OCR does not run on the emulator); reads a frozen snapshot, shows the text while speaking it in chunks, Stop reading at any time |
+| Read printed text | Merged into Describe surroundings: short text is said in the description, longer text is read aloud in chunks after it; the main button becomes Stop reading while it plays; on-device OCR fallback when Core Vision OCR is missing |
 | Find a word (typed or preset, spoken and haptic guidance) | Implemented; picker, typing and the OCR loop verified on the emulator, guidance on real printed text and vibration not verified |
-| Full text screen for Read text | Large, scrollable, selectable text, one screen reader stop per line, Read again |
-| Photo from the gallery (Describe, Read text) | System photo picker, no storage permission; the photo is decoded at most 2048 px on the long side |
+| Full text screen (Show full text in Describe) | Large, scrollable, selectable text, one screen reader stop per line, Read again |
+| Photo from the gallery (Describe) | System photo picker, no storage permission; the photo is decoded at most 2048 px on the long side |
 | Light check | Ambient light sensor, falling back to camera brightness when the sensor reads 0 lux in a bright scene (the emulator sensor always reports 0); verified on the emulator through the camera fallback |
 | Color check | Names the color in the middle of the frame with white-balance correction from the rest of the frame (for example "blue", "probably beige", "mixed colours"); unit tested, not verified on a real phone |
 
 ## Screens
 
-The app opens on a list of features without starting the camera. Each feature has its own screen with the camera view, a status card with the spoken result and one large action button. Find an object and Find a word ask what to look for in a bottom sheet. Describe and Read text can also take a photo from the gallery; Read text then opens the full text screen.
+The app opens on a list of features without starting the camera. Each feature has its own screen with the camera view, a status card with the spoken result and one large action button. Find an object and Find a word ask what to look for in a bottom sheet. Describe can also take a photo from the gallery. Describe reads any text it finds aloud after naming the objects.
 
 | Start screen | Find an object, back camera | Front camera |
 |---|---|---|
@@ -115,7 +115,7 @@ Turn on Settings, Accessibility, ScreenReader. Swipe right moves to the next ele
 3. On the main button, double tap: "Describing stopped" is announced once and the button now reads "Start describing".
 4. Double tap Back: focus lands on the Describe surroundings tile.
 5. Open Find an object: "Find an object, Heading", status "What do you want to find?", "Choose an object". Double tap it: focus moves to "What do you want to find?, Heading" in the sheet. Swipe through the list; the screen behind is not reachable. Swipe to the end and double tap Cancel: focus is back on "Choose an object". Open it again and pick Mug: the camera starts and "Looking for mug" is announced; warmer and colder guidance is spoken at most every few seconds.
-6. Open Read text, point at printed text, double tap Read now: the text is read, the status says "Read N lines. Starts with: ...". Swipe to "Show full text" and open it: "Full text, Heading", then one line per swipe, then Read again, then Back. Back returns focus to Show full text.
+6. Open Describe surroundings, point at printed text, double tap Describe now: the objects are named, then the text is read; the button says Stop reading meanwhile. Swipe to "Show full text" and open it: "Full text, Heading", then one line per swipe, then Read again, then Back. Back returns focus to Show full text.
 7. Double tap "Use a photo instead", cancel the gallery: "No photo chosen" and focus on the photo button. Choose a photo with text: the full text screen opens.
 8. Deny the camera permission once: the status reads "Camera is off. Press Allow camera access, or allow it in Settings." and the main button is "Allow camera access".
 

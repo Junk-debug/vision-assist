@@ -8,7 +8,7 @@ import { normalizeFrame } from '../vision/FrameNormalizer';
 import { ContentRect, DetectionResult } from '../vision/DetectionTypes';
 import { describeScene, LiveSceneTracker } from '../vision/SceneTracker';
 import { colorResolverFor } from '../vision/ObjectColor';
-import { describeWithText, textHintFor } from '../vision/text/TextHint';
+import { describeWithText, normalizeText, planDescription } from '../vision/text/TextHint';
 import { SystemTimer, withTimeout } from '../vision/text/EngineRunner';
 
 export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
@@ -34,6 +34,7 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
   }
 
   async start(): Promise<void> {
+    this.services.setResultText('');
     this.services.setStatus(Messages.DESCRIBE_LOOKING);
     try {
       const frame = await this.services.camera.nextFrame();
@@ -43,8 +44,8 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
         const colorOf = await colorResolverFor(frame);
         this.services.overlay.drawDetections(result.detections, content, '', colorOf);
         this.services.setTiming(this.timings(result));
-        const hint = await this.textHint(frame);
-        this.announce(describeWithText(describeScene(result.detections, colorOf), hint), Messages.NOTHING_TO_DESCRIBE);
+        const text = await this.recognisedText(frame);
+        this.deliver(describeScene(result.detections, colorOf), text, Messages.NOTHING_TO_DESCRIBE);
       } finally {
         frame.release();
       }
@@ -82,21 +83,30 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
 
   async analyzePhoto(photo: image.PixelMap, content: ContentRect): Promise<void> {
     this.services.overlay.clear();
+    this.services.setResultText('');
     this.services.setStatus(Messages.ANALYSING_PHOTO);
     const result = await this.services.detector.detect(photo, DETECTION_THRESHOLD);
     const colorOf = await colorResolverFor(photo);
     this.services.overlay.drawDetections(result.detections, content, '', colorOf);
     this.services.setTiming(this.timings(result));
-    const hint = await this.textHint(photo);
-    this.announce(describeWithText(describeScene(result.detections, colorOf), hint), Messages.NOTHING_IN_PHOTO);
+    const text = await this.recognisedText(photo);
+    this.deliver(describeScene(result.detections, colorOf), text, Messages.NOTHING_IN_PHOTO);
   }
 
-  private announce(sentence: string, emptyMessage: string): void {
-    if (sentence === '') {
+  private deliver(scene: string, text: string, emptyMessage: string): void {
+    const plan = planDescription(scene, text);
+    this.services.setResultText(text);
+    if (plan.sentence === '') {
       this.services.reportFailure(emptyMessage);
-    } else {
-      this.services.reportResult(sentence);
+      return;
     }
+    if (plan.readChunks.length === 0) {
+      this.services.reportResult(plan.sentence);
+      return;
+    }
+    this.services.setStatus(plan.sentence);
+    this.services.resultReady();
+    this.services.narrator.readChunks(plan.readChunks);
   }
 
   private async process(frame: image.PixelMap): Promise<void> {
@@ -129,17 +139,17 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
       return false;
     }
     this.lastTextCheckAt = now;
-    const found = (await this.textHint(frame)) !== '';
+    const found = (await this.recognisedText(frame)) !== '';
     const appeared = found && !this.textVisible;
     this.textVisible = found;
     return appeared;
   }
 
-  private async textHint(frame: image.PixelMap): Promise<string> {
+  private async recognisedText(frame: image.PixelMap): Promise<string> {
     try {
       const result = await withTimeout(this.services.textReader.read(frame), DESCRIBE_TEXT_BUDGET_MS, this.timer,
         'describe text');
-      return textHintFor(result?.text);
+      return normalizeText(result?.text);
     } catch (error) {
       log(`text hint skipped ${describeError(error)}`);
       return '';

@@ -35,10 +35,10 @@ The helper reads the instruction aloud, then stays silent and does not touch the
 | 2 | "Is the light on in this room?" (helper sets the light) | Light check | Correct answer, once with the light on and once off | 1 min |
 | 3 | "Your watch is somewhere on this table. Pick it up." (helper places it off-centre) | Find an object, Watch | Tester's hand touches the watch | 2 min |
 | 4 | "Which of these two T-shirts is the blue one?" (helper holds them up in turn) | Color | Correct shirt named | 1 min |
-| 5 | "A letter came. What day is the appointment?" (helper places the letter) | Read text, full text screen | Tester says the right day and time | 2 min |
+| 5 | "A letter came. What day is the appointment?" (helper places the letter) | Describe surroundings reads the letter, full text screen | Tester says the right day and time | 2 min |
 | 6 | "Find the exit." (tester stands 3 to 4 m from the EXIT sign, facing away) | Find a word, EXIT | Tester points the phone at the sign and walks to within 1 m | 3 min |
 | 7 | "What is on the table in front of you?" (helper puts a bottle and a mug) | Describe surroundings | Tester names both objects and which side each is on | 1 min |
-| 8 | "Read the label in the photo in your gallery." | Read text, Use a photo instead | Tester repeats the main words of the label | 2 min |
+| 8 | "Read the label in the photo in your gallery." | Describe surroundings, Use a photo instead | Tester repeats the main words of the label | 2 min |
 
 Optional, helper only, no blindfold: switch to the front camera in Describe and check that the boxes still sit on the objects.
 
@@ -67,6 +67,6 @@ Optional, helper only, no blindfold: switch to the front camera in Describe and 
 |---|---|---|
 | Boxes are rotated or offset from the objects | Frame rotation differs on this phone | Change the per-camera rotation in `entry/src/main/ets/common/Config.ets`, rebuild |
 | No vibration in find modes | Silent mode, or the phone's vibration is off | Turn off silent mode; check Settings, Sounds and vibration |
-| Read text says text reading is not available, or is slow | System OCR missing; the on-device fallback is used | Note it; the fallback still works, it is just slower |
+| Describe says text reading is not available, or is slow | System OCR missing; the on-device fallback is used | Note it; the fallback still works, it is just slower |
 | Speech in a Chinese voice | English voice not installed | Install the English voice in the system text-to-speech settings (needs network once, before airplane mode) |
 | First thing the screen reader says is not the screen title | Default focus not applied on this system version | Note the screen; it is a known risk in the Accessibility section of the README |
