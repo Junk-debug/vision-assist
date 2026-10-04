@@ -24,6 +24,7 @@ import { ScreenFrame } from '../ui/components/ScreenFrame';
 import { StatusCard } from '../ui/components/StatusCard';
 import { TargetSheet } from '../ui/components/TargetSheet';
 import { FontSize, Palette, Radius, Sizes, Spacing } from '../ui/theme/Theme';
+import { EngineKind, EngineListener, EngineMode } from '../vision/FindEngine';
 
 @Component
 export struct FeaturePage {
@@ -44,6 +45,9 @@ export struct FeaturePage {
   @State readingIndex: number = -1;
   @State debugOn: boolean = DebugState.enabled;
   @State debugText: string = '';
+  @State engineCloud: boolean = false;
+  @State engineLabel: string = '';
+  @State engineAuto: boolean = true;
   private info: FeatureInfo = FEATURE_CATALOG[0];
   private canvas: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true));
   private sceneOverlay: Overlay = new Overlay(this.canvas);
@@ -61,6 +65,9 @@ export struct FeaturePage {
   private readingListener: ReadingListener = (index: number) => {
     this.readingIndex = index;
   };
+  private engineListener: EngineListener = () => {
+    this.refreshEngine();
+  };
 
   private ctx(): common.UIAbilityContext {
     return this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -68,7 +75,8 @@ export struct FeaturePage {
 
   aboutToAppear(): void {
     this.info = findFeatureInfo(this.featureId);
-    const services = new FeatureServices(appServices.camera, appServices.detector, appServices.narrator, this.sceneOverlay,
+    const services = new FeatureServices(appServices.camera, appServices.detector, appServices.cloudDetector, appServices.findEngine,
+      appServices.narrator, this.sceneOverlay,
       appServices.textReader, (text: string) => {
         this.status = text;
       }, (text: string) => {
@@ -81,6 +89,8 @@ export struct FeaturePage {
     });
     this.binding = createFeature(this.info.id, services);
     appServices.narrator.reader.addListener(this.readingListener);
+    appServices.findEngine.addListener(this.engineListener);
+    this.refreshEngine();
     this.sceneOverlay.setStyle(this.info.accent, false);
     this.status = this.needsTarget() ? this.info.targetPrompt : Messages.STARTING_CAMERA;
     appServices.narrator.announceScreen(this.needsTarget() ? Messages.screenWithPrompt(this.info.name, this.info.targetPrompt) :
@@ -89,6 +99,7 @@ export struct FeaturePage {
 
   aboutToDisappear(): void {
     appServices.narrator.reader.removeListener(this.readingListener);
+    appServices.findEngine.removeListener(this.engineListener);
     appServices.narrator.stopReading();
     this.stopFeature();
     this.closeCamera();
@@ -140,6 +151,25 @@ export struct FeaturePage {
     this.debugOn = DebugState.enabled;
     if (!this.debugOn) {
       this.debugText = '';
+    }
+  }
+
+  private showEngine(): boolean {
+    return this.info.id === 'find' && !this.needsTarget() && appServices.findEngine.hasCloud();
+  }
+
+  private refreshEngine(): void {
+    const now = Date.now();
+    this.engineCloud = appServices.findEngine.current(now) === EngineKind.CLOUD;
+    this.engineLabel = appServices.findEngine.label(now);
+    this.engineAuto = appServices.findEngine.getMode() === EngineMode.AUTO;
+  }
+
+  private toggleEngine(): void {
+    appServices.findEngine.toggleMode();
+    const auto = appServices.findEngine.getMode() === EngineMode.AUTO;
+    if (!this.running) {
+      appServices.narrator.announce(auto ? Messages.ENGINE_AUTO : Messages.ENGINE_DEVICE_CHOSEN);
     }
   }
 
@@ -496,7 +526,11 @@ export struct FeaturePage {
     TargetSheet({
       prompt: this.info.targetPrompt,
       targets: this.info.targets,
-      allowTyping: this.info.picker === PickerKind.WORD,
+      allowTyping: this.info.picker !== PickerKind.NONE,
+      fieldPlaceholder: this.info.picker === PickerKind.OBJECT ? Messages.TYPE_AN_OBJECT : Messages.TYPE_A_WORD,
+      fieldLabel: this.info.picker === PickerKind.OBJECT ? Messages.OBJECT_FIELD_LABEL : Messages.WORD_FIELD_LABEL,
+      fieldHint: this.info.picker === PickerKind.OBJECT ? Messages.OBJECT_FIELD_HINT : Messages.WORD_FIELD_HINT,
+      startHint: this.info.picker === PickerKind.OBJECT ? Messages.START_TYPED_OBJECT_HINT : Messages.START_TYPED_HINT,
       onPick: (picked: string) => {
         this.onPick(picked);
       },
@@ -531,6 +565,31 @@ export struct FeaturePage {
           elementId: ElementIds.FEATURE_STATUS,
           nextFocusId: this.nextOf(ElementIds.FEATURE_STATUS)
         })
+        if (this.showEngine()) {
+          Row({ space: Spacing.sm }) {
+            Circle()
+              .width(10)
+              .height(10)
+              .fill(this.engineCloud ? Palette.overlayTarget : Palette.disabled)
+            Text(this.engineLabel)
+              .fontSize(FontSize.caption)
+              .fontColor(Palette.textPrimary)
+            Text(this.engineAuto ? 'Auto' : 'Manual')
+              .fontSize(FontSize.caption)
+              .fontColor(Palette.textSecondary)
+          }
+          .backgroundColor(Palette.card)
+          .borderRadius(Radius.chip)
+          .padding({ left: Spacing.md, right: Spacing.md, top: Spacing.xs, bottom: Spacing.xs })
+          .accessibilityGroup(true)
+          .accessibilityText(`${this.engineLabel}. ` + (this.engineAuto ?
+            'Automatic: cloud when online, on-device when offline' : 'On-device model only'))
+          .accessibilityDescription(this.engineAuto ?
+            'Double tap to always use the on-device model' : 'Double tap to use the cloud when online')
+          .onClick(() => {
+            this.toggleEngine();
+          })
+        }
         if (this.hasDebug() && !this.needsTarget()) {
           Text(this.debugOn ? 'Debug on' : 'Debug')
             .fontSize(FontSize.caption)

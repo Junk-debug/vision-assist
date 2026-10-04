@@ -22,3 +22,4 @@ msl/
 *.pt
 entry/.test/
 !tools/debug/
+entry/src/main/resources/rawfile/sam3.json

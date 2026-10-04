@@ -6,6 +6,8 @@ import { FrameInjector } from '../camera/FrameSource';
 import { FrameSourceSwitch } from '../camera/FrameSourceSwitch';
 import { describeError, log } from '../common/Logger';
 import { Narrator } from '../speech/Narrator';
+import { FindEngine } from '../vision/FindEngine';
+import { Sam3Detector } from '../vision/Sam3Detector';
 import { YoloDetector } from '../vision/YoloDetector';
 import { PaddleTextRecognizer } from '../vision/text/PaddleTextRecognizer';
 import { SystemTextRecognizer } from '../vision/text/SystemTextRecognizer';
@@ -20,6 +22,8 @@ function frameInjector(): FrameInjector | undefined {
 export class AppServices {
   readonly camera: FrameSourceSwitch = new FrameSourceSwitch(new CameraSource(), frameInjector());
   readonly detector: YoloDetector = new YoloDetector();
+  readonly cloudDetector: Sam3Detector = new Sam3Detector();
+  readonly findEngine: FindEngine = new FindEngine(this.cloudDetector);
   readonly narrator: Narrator = new Narrator();
   readonly textReader: TextReader = new TextReader();
   private loading?: Promise<void>;
@@ -36,6 +40,8 @@ export class AppServices {
     this.textReader.add(new PaddleTextRecognizer(context));
     this.textReader.prepare();
     await this.narrator.init();
+    await this.cloudDetector.load(context);
+    this.findEngine.start();
     try {
       await this.detector.load(context);
     } catch (error) {
@@ -71,6 +77,7 @@ export class AppServices {
 
   release(): void {
     this.camera.stop();
+    this.findEngine.stop();
     this.textReader.release();
     this.narrator.release();
   }

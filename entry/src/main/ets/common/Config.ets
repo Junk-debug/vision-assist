@@ -7,8 +7,10 @@ export const DEBUG_DISPLAY_THRESHOLD: number = 0.15;
 export const DEBUG_SUMMARY_MS: number = 1000;
 export const LIVE_FRAME_INTERVAL_MS: number = 250;
 export const FIND_FRAME_INTERVAL_MS: number = 150;
+export const CLOUD_FIND_THRESHOLD: number = 0.4;
+export const CLOUD_FIND_FRAME_INTERVAL_MS: number = 300;
 export const FIND_TARGETS: string[] = [
-  'Mobile phone', 'Watch', 'Coin', 'Glasses', 'Bottle', 'Mug', 'Coffee cup', 'Backpack', 'Handbag',
+  'Keys', 'Mobile phone', 'Watch', 'Coin', 'Glasses', 'Bottle', 'Mug', 'Coffee cup', 'Backpack', 'Handbag',
   'Laptop', 'Tablet computer', 'Remote control', 'Computer mouse', 'Book', 'Umbrella', 'Chair', 'Door', 'Person'
 ];
 export const WORD_FRAME_INTERVAL_MS: number = 700;
@@ -62,6 +64,29 @@ export const FIND_OBJECT_TUNING: FindTuning = {
   arriveSide: 0.45,
   arriveGrowth: 2.0,
   arriveMinSide: 0.12,
+  arriveFrames: 2,
+  slowestPulseMs: 1000,
+  fastestPulseMs: 150,
+  pulseSteps: 8
+};
+
+// SAM 3 answers over the network in about a second, so it is lost later and acquired on one hit.
+export const FIND_CLOUD_TUNING: FindTuning = {
+  acquireWindow: 2,
+  acquireHits: 1,
+  lostAfterMs: 4000,
+  searchTickMs: 1500,
+  searchSpeechGapMs: 4000,
+  directionGapMs: 2500,
+  directionRepeatMs: 5000,
+  closerGapMs: 4000,
+  closerRepeatLimit: 3,
+  centredTolerance: 0.15,
+  leaveCentredTolerance: 0.25,
+  // SAM 3 boxes are tight and it acquires from far away, so growth alone fired at about 70 cm.
+  arriveSide: 0.55,
+  arriveGrowth: 4.0,
+  arriveMinSide: 0.35,
   arriveFrames: 2,
   slowestPulseMs: 1000,
   fastestPulseMs: 150,

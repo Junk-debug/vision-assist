@@ -58,7 +58,7 @@ export interface FindStep {
 
 export class FindStateMachine {
   private readonly texts: FindTexts;
-  private readonly tuning: FindTuning;
+  private tuning: FindTuning;
   private state: FindState = FindState.SEARCHING;
   private hits: boolean[] = [];
   private lastSeenAt: number = 0;
@@ -73,6 +73,10 @@ export class FindStateMachine {
   private lastDirection: string = '';
   private lastPulseMs: number = 0;
   private lastCloseness: number = 0;
+
+  setTuning(tuning: FindTuning): void {
+    this.tuning = tuning;
+  }
 
   constructor(texts: FindTexts, tuning: FindTuning) {
     this.texts = texts;

@@ -11,6 +11,10 @@ export struct TargetSheet {
   @Prop prompt: string = '';
   @Prop targets: string[] = [];
   @Prop allowTyping: boolean = false;
+  @Prop fieldPlaceholder: string = Messages.TYPE_A_WORD;
+  @Prop fieldLabel: string = Messages.WORD_FIELD_LABEL;
+  @Prop fieldHint: string = Messages.WORD_FIELD_HINT;
+  @Prop startHint: string = Messages.START_TYPED_HINT;
   @State typed: string = '';
   onPick: (target: string) => void = (target: string) => {};
   onCancel: () => void = () => {};
@@ -50,7 +54,7 @@ export struct TargetSheet {
       ScreenTitle({ text: this.prompt, elementId: ElementIds.SHEET_TITLE, centered: false })
         .padding({ top: Spacing.sm })
       if (this.allowTyping) {
-        TextInput({ text: this.typed, placeholder: Messages.TYPE_A_WORD })
+        TextInput({ text: this.typed, placeholder: this.fieldPlaceholder })
           .fontSize(FontSize.tileTitle)
           .fontColor(Palette.textPrimary)
           .placeholderColor(Palette.textSecondary)
@@ -61,8 +65,8 @@ export struct TargetSheet {
           .padding({ left: Spacing.lg, right: Spacing.lg })
           .maxLength(WORD_MAX_LENGTH)
           .enterKeyType(EnterKeyType.Go)
-          .accessibilityText(Messages.WORD_FIELD_LABEL)
-          .accessibilityDescription(Messages.WORD_FIELD_HINT)
+          .accessibilityText(this.fieldLabel)
+          .accessibilityDescription(this.fieldHint)
           .onChange((value: string) => {
             this.typed = value;
           })
@@ -71,7 +75,7 @@ export struct TargetSheet {
           })
         BigButton({
           label: Messages.START,
-          hint: Messages.START_TYPED_HINT,
+          hint: this.startHint,
           onTap: () => {
             this.onPick(this.typed);
           }

@@ -51,6 +51,10 @@ export class GuidanceCoach {
     this.machine = new FindStateMachine(texts, tuning);
   }
 
+  setTuning(tuning: FindTuning): void {
+    this.machine.setTuning(tuning);
+  }
+
   start(now: number): void {
     this.apply(this.machine.start(now));
   }

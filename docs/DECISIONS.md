@@ -10,6 +10,7 @@ Evidence paths outside this repository (`yolo-spike/`, `spike-vision/`) refer to
 - **Why:** Camera frames of a blind person's home, letters and medicine are sensitive. Without the permission, "no frame leaves the phone" is enforced by the system, not by a promise. It also works without signal (stairwells, basements, abroad). It fits the challenge's point about digital sovereignty.
 - **Alternatives considered:** Cloud vision-language model for richer descriptions; optional cloud assist behind a switch.
 - **Evidence:** `entry/src/main/module.json5` lists only `CAMERA` and `VIBRATE`.
+- **Experiment (Oct 2026):** Find picks its detector automatically (`vision/FindEngine.ets`): SAM 3 on Roboflow Serverless (`vision/Sam3Detector.ets`) when the phone has a validated internet connection and a key is set, the on-device model when offline or for 20 s after a failed cloud request. A chip under the status card shows the engine and switches between Auto and on-device only. It needs `ohos.permission.INTERNET` and `GET_NETWORK_INFO`, now declared, and a key in `entry/src/main/resources/rawfile/sam3.json` (gitignored: `{"roboflowApiKey": "..."}`). Without the key the chip is hidden and Find stays offline.
 - **Plan:** An optional cloud assist, off by default, is listed under "Later" in `TODO.md`. It would need the network permission and is not started.
 
 ## 2. No voice input and no LLM

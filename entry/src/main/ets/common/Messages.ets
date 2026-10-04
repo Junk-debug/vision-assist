@@ -42,6 +42,11 @@ export class Messages {
   static readonly START: string = 'Start';
   static readonly START_TYPED_HINT: string = 'Starts looking for the typed word';
   static readonly OR_CHOOSE_ONE: string = 'Or choose one';
+  static readonly TYPE_AN_OBJECT: string = 'Type or say any object';
+  static readonly OBJECT_FIELD_LABEL: string = 'Object to find';
+  static readonly OBJECT_FIELD_HINT: string =
+    'Type the object, or press the microphone key on the keyboard and say it, then press Start';
+  static readonly START_TYPED_OBJECT_HINT: string = 'Starts looking for the typed object';
   static readonly CANCEL: string = 'Cancel';
   static readonly CANCEL_PICKER_HINT: string = 'Closes this list without changing anything';
   static readonly PICKER_CLOSED: string = 'Nothing changed.';
@@ -119,6 +124,16 @@ export class Messages {
 
   static findStatus(target: string): string {
     return `Looking for ${target.toLowerCase()}.`;
+  }
+
+  static readonly ENGINE_CLOUD: string = 'Online. Using cloud search.';
+  static readonly ENGINE_DEVICE_OFFLINE: string = 'Offline. Using the on-device model.';
+  static readonly ENGINE_DEVICE_FAILED: string = 'Cloud not responding. Using the on-device model.';
+  static readonly ENGINE_DEVICE_CHOSEN: string = 'Using the on-device model only.';
+  static readonly ENGINE_AUTO: string = 'Automatic: cloud when online.';
+
+  static needsInternet(target: string): string {
+    return `${target} can only be found with cloud search. Connect to the internet.`;
   }
 
   static searchingFor(target: string): string {
