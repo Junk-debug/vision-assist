@@ -2,9 +2,8 @@ import { Feature, FeatureServices } from './Feature';
 import { describeError, log } from '../common/Logger';
 import { Messages } from '../common/Messages';
 import { normalizeFrame } from '../vision/FrameNormalizer';
-import { nameColor } from '../vision/ColorNamer';
+import { centerRegion, describeColor, readColor } from '../vision/ColorNamer';
 
-const SAMPLE_FRACTION: number = 0.12;
 const MARKER_COLOR: string = '#FFFFFF';
 
 export class ColorFeature implements Feature {
@@ -35,26 +34,19 @@ export class ColorFeature implements Feature {
       await frame.readPixelsToBuffer(buffer);
       frame.release();
       const pixels = new Uint8Array(buffer);
-      const rowBytes = pixels.length / info.size.height;
-      const half = Math.max(2, Math.round(Math.min(info.size.width, info.size.height) * SAMPLE_FRACTION));
-      const centerX = Math.round(info.size.width / 2);
-      const centerY = Math.round(info.size.height / 2);
-      let red = 0;
-      let green = 0;
-      let blue = 0;
-      let count = 0;
-      for (let y = centerY - half; y < centerY + half; y++) {
-        for (let x = centerX - half; x < centerX + half; x++) {
-          const offset = y * rowBytes + x * 4;
-          red += pixels[offset];
-          green += pixels[offset + 1];
-          blue += pixels[offset + 2];
-          count++;
-        }
-      }
-      const name = nameColor(red / count, green / count, blue / count);
-      this.services.overlay.drawCenterMarker(content, MARKER_COLOR);
-      this.services.reportResult(name);
+      const width = info.size.width;
+      const height = info.size.height;
+      const reading = readColor({ data: pixels, width: width, height: height, rowBytes: pixels.length / height });
+      const region = centerRegion(width, height);
+      this.services.overlay.drawRegion({
+        x1: region.x / width,
+        y1: region.y / height,
+        x2: (region.x + region.width) / width,
+        y2: (region.y + region.height) / height
+      }, content, MARKER_COLOR);
+      log(`color ${reading.name} share ${reading.share.toFixed(2)} gains ${reading.balance.red.toFixed(2)}/` +
+        `${reading.balance.green.toFixed(2)}/${reading.balance.blue.toFixed(2)}`);
+      this.services.reportResult(describeColor(reading));
     } catch (error) {
       log(`color check failed ${describeError(error)}`);
       this.services.reportFailure(Messages.COLOR_FAILED);

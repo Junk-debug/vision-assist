@@ -142,6 +142,13 @@ export class Overlay {
     this.canvas.strokeRect(x, y, this.spanX(box.x1, box.x2, content), this.mapY(box.y2, content) - y);
   }
 
+  drawRegion(box: NormalizedBox, content: ContentRect, color: string): void {
+    this.clear();
+    this.canvas.lineWidth = 4;
+    this.canvas.strokeStyle = color;
+    this.strokeBox(box, content);
+  }
+
   drawCenterMarker(content: ContentRect, color: string): void {
     this.clear();
     const x = this.mapX(0.5, content);
