@@ -77,6 +77,11 @@ export class Messages {
   static readonly COLOR_FAILED: string = 'The color could not be checked. Hold the item close to the camera and try again.';
   static readonly CHECKING_LIGHT: string = 'Checking the light.';
   static readonly LIGHT_FAILED: string = 'The light could not be checked. Point the phone into the room and try again.';
+  static readonly SCENE_LIT: string = 'Light is on.';
+  static readonly SCENE_DIM: string = 'It is dim.';
+  static readonly SCENE_DARK: string = 'It is dark. The light may be off.';
+  static readonly LIGHT_TURNED_ON: string = 'Light is on now.';
+  static readonly LIGHT_TURNED_OFF: string = 'It got dark. The light may be off.';
   static readonly LUMA_DARK: string = 'It looks dark. The light may be off.';
   static readonly LUMA_DIM: string = 'It looks dim.';
   static readonly LUMA_NORMAL: string = 'The light looks on. Normal lighting.';

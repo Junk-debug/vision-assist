@@ -88,26 +88,6 @@ export const FEATURE_CATALOG: FeatureInfo[] = [
     changeTargetLabel: 'Choose another word',
     chooseTargetLabel: 'Choose a word',
     photoInput: false
-  },
-  {
-    id: 'light',
-    name: 'Light check',
-    description: 'Hear if the room is lit',
-    icon: $r('sys.symbol.lightbulb_max'),
-    accent: Accent.light,
-    tint: Accent.lightTint,
-    needsDetector: false,
-    startLabel: 'Check the light',
-    stopLabel: 'Check the light',
-    busyLabel: 'Checking',
-    actionHint: 'Tells you whether the light is on',
-    readyText: 'Point the phone into the room, then press Check the light.',
-    picker: PickerKind.NONE,
-    targets: [],
-    targetPrompt: '',
-    changeTargetLabel: '',
-    chooseTargetLabel: '',
-    photoInput: false
   }
 ];
 

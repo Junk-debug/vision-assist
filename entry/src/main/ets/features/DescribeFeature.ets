@@ -7,6 +7,7 @@ import { Priority } from '../speech/Narrator';
 import { normalizeFrame } from '../vision/FrameNormalizer';
 import { ContentRect, DetectionResult } from '../vision/DetectionTypes';
 import { describeScene, LiveSceneTracker } from '../vision/SceneTracker';
+import { Brightness, LightMeter } from '../vision/LightMeter';
 import { colorResolverFor } from '../vision/ObjectColor';
 import { describeWithText, normalizeText, planDescription } from '../vision/text/TextHint';
 import { SystemTimer, withTimeout } from '../vision/text/EngineRunner';
@@ -15,6 +16,8 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
   readonly id: string = 'describe';
   readonly continuous: boolean = false;
   private readonly services: FeatureServices;
+  private readonly light: LightMeter = new LightMeter();
+  private lastBrightness: Brightness | undefined = undefined;
   private readonly tracker: LiveSceneTracker = new LiveSceneTracker();
   private live: boolean = false;
   private readonly timer: SystemTimer = new SystemTimer();
@@ -36,6 +39,7 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
   async start(): Promise<void> {
     this.services.setResultText('');
     this.services.setStatus(Messages.DESCRIBE_LOOKING);
+    this.light.start();
     try {
       const frame = await this.services.camera.nextFrame();
       try {
@@ -45,7 +49,8 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
         this.services.overlay.drawDetections(result.detections, content, '', colorOf);
         this.services.setTiming(this.timings(result));
         const text = await this.recognisedText(frame);
-        this.deliver(describeScene(result.detections, colorOf), text, Messages.NOTHING_TO_DESCRIBE);
+        const brightness = await this.light.measure(frame);
+        this.deliver(withLight(describeScene(result.detections, colorOf), brightness, Messages.NOTHING_TO_DESCRIBE), text, Messages.NOTHING_TO_DESCRIBE);
       } finally {
         frame.release();
       }
@@ -57,6 +62,7 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
 
   stop(): void {
     this.stopLive();
+    this.light.stop();
   }
 
   isLive(): boolean {
@@ -65,6 +71,8 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
 
   async startLive(): Promise<void> {
     this.tracker.reset();
+    this.lastBrightness = undefined;
+    this.light.start();
     this.lastTextCheckAt = 0;
     this.textVisible = false;
     this.live = true;
@@ -123,6 +131,10 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
     this.services.setTiming(this.timings(result));
     const now = Date.now();
     let sentence = this.tracker.update(result.detections, now, colorOf);
+    const change = this.lightChange(await this.light.measure(frame));
+    if (change !== '') {
+      sentence = sentence === undefined ? change : `${sentence} ${change}`;
+    }
     const appeared = await this.textAppeared(frame, now);
     if (appeared) {
       sentence = describeWithText(sentence ?? '', Messages.TEXT_AHEAD);
@@ -132,6 +144,21 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
       this.services.resultReady();
       this.services.narrator.announce(sentence, Priority.RESULT);
     }
+  }
+
+  private lightChange(brightness: Brightness | undefined): string {
+    if (brightness === undefined || brightness === Brightness.DIM) {
+      return '';
+    }
+    const previous = this.lastBrightness;
+    this.lastBrightness = brightness;
+    if (previous === undefined) {
+      return brightness === Brightness.DARK ? Messages.SCENE_DARK : Messages.SCENE_LIT;
+    }
+    if (previous === brightness) {
+      return '';
+    }
+    return brightness === Brightness.DARK ? Messages.LIGHT_TURNED_OFF : Messages.LIGHT_TURNED_ON;
   }
 
   private async textAppeared(frame: image.PixelMap, now: number): Promise<boolean> {
@@ -160,4 +187,13 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
     const total = result.preprocessMs + result.inferenceMs + result.postprocessMs;
     return Messages.timing(total, result.preprocessMs, result.inferenceMs, result.postprocessMs);
   }
+}
+
+function withLight(scene: string, brightness: Brightness | undefined, emptyMessage: string): string {
+  if (brightness === undefined) {
+    return scene;
+  }
+  const phrase = brightness === Brightness.DARK ? Messages.SCENE_DARK :
+    (brightness === Brightness.DIM ? Messages.SCENE_DIM : Messages.SCENE_LIT);
+  return `${scene === '' ? emptyMessage : scene} ${phrase}`;
 }
