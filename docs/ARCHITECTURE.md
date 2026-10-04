@@ -29,7 +29,7 @@ This document describes the code as committed. Statements that have only been ch
                                        |
                            FeatureServices (app/AppServices.ets, shared by all screens)
      +-------------+---------------+----------------+-----------------+----------------+
-     | CameraSource| YoloDetector  | TextReader     | Narrator        | Overlay        |
+     | FrameSource | YoloDetector  | TextReader     | Narrator        | Overlay        |
      | Camera Kit  | MindSpore Lite| System OCR ->  | Accessibility / | Canvas boxes,  |
      | + Image Kit | YOLOv8s .ms   | PaddleOCR .ms  | Core Speech Kit | mirrored front |
      +-------------+---------------+----------------+-----------------+----------------+
@@ -72,7 +72,7 @@ Frame intervals (`common/Config.ets`): Describe 250 ms, Find an object 150 ms, F
 
 ## Feature modules
 
-All features implement `Feature` (`id`, `continuous`, `start()`, `stop()`). `FeatureFactory` maps the tile id to a class. Continuous features register a frame handler; one-shot features take a single frame with `camera.nextFrame()`.
+All features implement `Feature` (`id`, `continuous`, `start()`, `stop()`). `FeatureFactory` maps the tile id to a class. Continuous features register a frame handler; one-shot features take a single frame with `camera.nextFrame()`. `camera` is a `FrameSource` (`camera/FrameSource.ets`): `CameraSource` in normal builds; in the debug-only `frames` build `FrameSourceSwitch` uses `InjectedFrameSource` (`entry/src/frames`) when the Mac frame server answers, see `docs/EMULATOR.md`.
 
 | Feature | Class | What it does |
 |---|---|---|
@@ -151,7 +151,7 @@ Rebuild steps for the detector are in `tools/model/README.md`.
 
 ## Privacy
 
-- Permissions requested: `ohos.permission.CAMERA` (in use only) and `ohos.permission.VIBRATE`. There is no `ohos.permission.INTERNET`, so the app cannot send anything.
+- Permissions requested: `ohos.permission.CAMERA` (in use only) and `ohos.permission.VIBRATE`. There is no `ohos.permission.INTERNET`, so the app cannot send anything. The only build with that permission is the debug-only `frames` product used to inject test images on the emulator; its network code lives in `entry/src/frames` and is not compiled into the `default` product, and the build refuses `frames` in release mode.
 - Camera frames live only in memory: each PixelMap is released after processing. No frame, text or detection result is written to storage or logged as an image.
 - No account, no analytics, no cloud model.
 

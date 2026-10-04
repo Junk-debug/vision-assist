@@ -21,7 +21,7 @@
 
 ## Testing
 
-- [ ] Debug-only frame source that feeds images from the Mac instead of the camera (no network permission in release)
+- [x] Debug-only frame source that feeds images from the Mac instead of the camera (no network permission in release)
 - [ ] Real phone: frame rotation, front camera, system OCR, vibration, English voice, screen reader (see `docs/DEVICE.md`)
 - [ ] Turn on the real screen reader and walk through every screen with swipes and double tap
 

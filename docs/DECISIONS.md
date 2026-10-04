@@ -75,7 +75,7 @@ Evidence paths outside this repository (`yolo-spike/`, `spike-vision/`) refer to
 
 - **Decision:** Document that the emulator must be started from DevEco Studio's Device Manager, with camera access granted to DevEco Studio in macOS. No code workaround.
 - **Why:** Started with `devecocli emulator start`, macOS silently refuses the webcam and the preview stays black. The emulator always opens the first camera in macOS's discovery list, so an iPhone Continuity Camera cannot be chosen without hiding the built-in camera (for example in clamshell mode, not tested).
-- **Alternatives considered:** A debug-only frame source that feeds images from the Mac instead of the camera (**Plan**, in `TODO.md`; it must not add the network permission to release builds).
+- **Alternatives considered:** A debug-only frame source that feeds images from the Mac instead of the camera. Now built as the `frames` product (see decision 15).
 - **Evidence:** `docs/EMULATOR.md` item 2; emulator log lines with "camera permission denied" (`spike-vision/evidence/emulator_host_camera_denied.txt`).
 - **Related:** the app opens on a feature list without starting the camera; the camera starts only on a feature screen.
 
@@ -122,3 +122,10 @@ Evidence paths outside this repository (`yolo-spike/`, `spike-vision/`) refer to
 - **Alternatives considered:** `alarm` (also not touch-muted, but meant for alarms and may be treated with higher priority); `touch` for everything (guidance silently lost with touch feedback off); custom `VibrateFromPattern` sequences (API 18+, needs hardware support checks, more than these cues need).
 - **Evidence:** `haptics/Haptics.ets`, `haptics/HapticPatterns.ets`, `Haptics.test.ets`; `devecocli docs read "API参考/硬件/Sensor_Service_Kit_传感器服务/ArkTS_API/ohos_vibrator_振动_/js-apis-vibrator"` (Usage, HapticFeedback, VibratePreset).
 - **Not verified:** how the cues feel on a real phone (the emulator vibrator fails), preset lengths per device, and whether Do Not Disturb mutes `notification` vibration.
+
+## 15. Injected test frames as a separate debug-only product
+
+- **Decision:** Test images from the Mac reach the app through a separate `frames` product and `entry` target. The target adds the source root `entry/src/frames` (HTTP client `InjectedFrameSource`) and sets `BuildProfile.FRAME_INJECTION`; the root `hvigorfile.ts` adds `ohos.permission.INTERNET` to the module only when the product is `frames`, and fails the build if `frames` is built in release mode. The `default` target compiles `entry/src/default`, whose `createFrameInjector()` returns nothing.
+- **Why:** The privacy claim "no network permission" must hold for what ships, and it is easiest to prove when the shipped package contains neither the permission nor the code. hvigor has no per-target `module.json5` and no per-build-mode permissions; per-target source roots (`source.sourceRoots`) and the documented `setModuleJsonOpt` hook in `hvigorfile.ts` are the supported mechanisms. A product, not just a target, keeps `assembleApp` for `default` from packing the debug HAP.
+- **Alternatives considered:** A runtime switch in the normal build (would need INTERNET in every build); keying only on build mode (the debug HAP of `default`, used for normal development, would then request INTERNET); a hidden gesture to turn injection on (not needed: the server being reachable is the switch, and only in the `frames` build).
+- **Evidence:** built `module.json` of `default` debug and release lists only CAMERA and VIBRATE, and its `modules.abc` does not contain `InjectedFrameSource`; the `frames` debug HAP lists INTERNET as well; `--product frames --build-mode release` fails in the `nodesEvaluated` hook.

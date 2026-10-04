@@ -67,7 +67,9 @@ Source layout (`entry/src/main/ets`):
 | `ui/components/*.ets` | Screen frame (title, back), tile, buttons, status card, camera preview, picker sheet |
 | `ui/theme/Theme.ets` | All colours, sizes, spacing and font sizes |
 | `ui/Overlay.ets` | Boxes and labels drawn over the camera view, mirrored for the front camera |
-| `camera/CameraSource.ets` | Camera session, front and back switching, frame delivery with throttling |
+| `camera/FrameSource.ets` | What features get frames from: frame handler with a minimum interval, `nextFrame()`, start and stop, camera position |
+| `camera/CameraSource.ets` | Camera session, front and back switching, frame delivery with throttling (`FrameGate`) |
+| `camera/FrameSourceSwitch.ets` | Chooses the camera or, in the debug-only `frames` build, injected frames from the Mac |
 | `vision/FrameNormalizer.ets` | Frame cleanup and mapping to the preview |
 | `vision/YoloDetector.ets` | Model loading, preprocessing, decoding, NMS |
 | `vision/SceneTracker.ets` | Which objects to announce and when |
@@ -166,6 +168,10 @@ mkdir -p signatures && cp "$SDK/OpenHarmony.p12" "$SDK/OpenHarmonyProfileRelease
 ```
 
 Create a profile for the bundle `com.hackyeah.visionassist` from `$SDK/UnsgnedReleasedProfileTemplate.json` (change `bundle-name`) and sign it with `hap-sign-tool.jar sign-profile` (sample key password is documented by OpenHarmony). Then add a `signingConfigs` entry to `build-profile.json5` pointing at the files in `signatures/`. The `signatures/` folder is git-ignored on purpose.
+
+## Testing without the webcam
+
+The debug-only `frames` product feeds still images or image sequences from the Mac to the app instead of the camera (`tools/debug/frame_server.py`, `hdc rport`). Only that product requests `ohos.permission.INTERNET` and contains the HTTP client; the `default` product, debug or release, has neither, and a release build of `frames` is refused. See "Testing with injected frames" in `docs/EMULATOR.md`.
 
 ## Model
 
