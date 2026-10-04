@@ -1,3 +1,4 @@
+import { haptics } from '../../haptics/Haptics';
 import { FontSize, Motion, Palette, Radius, Sizes, Spacing } from '../theme/Theme';
 
 export enum ButtonTone {
@@ -66,6 +67,7 @@ export struct BigButton {
       }
     })
     .onClick(() => {
+      haptics.tap();
       this.onTap();
     })
   }

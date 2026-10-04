@@ -78,11 +78,11 @@ export class LightFeature implements Feature {
     }
     const sensorLooksBroken = lux !== undefined && lux < DARK_LUX && luma !== undefined && luma > SENSOR_CONFLICT_LUMA;
     if (lux !== undefined && !sensorLooksBroken) {
-      this.services.report(describeLux(lux));
+      this.services.reportResult(describeLux(lux));
     } else if (luma !== undefined) {
-      this.services.report(describeLuma(luma));
+      this.services.reportResult(describeLuma(luma));
     } else {
-      this.services.report(Messages.LIGHT_FAILED);
+      this.services.reportFailure(Messages.LIGHT_FAILED);
     }
   }
 

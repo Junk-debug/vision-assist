@@ -1,11 +1,9 @@
 import { FeatureServices } from './Feature';
 import { Guidance } from './FindGuidance';
 import { Messages } from '../common/Messages';
-import { Haptics } from '../haptics/Haptics';
+import { haptics } from '../haptics/Haptics';
 import { Priority } from '../speech/Narrator';
 
-const PULSE_DURATION_MS: number = 40;
-const ARRIVED_VIBRATION_MS: number = 600;
 const SPEECH_GAP_MS: number = 3000;
 const LOST_AFTER_MS: number = 1500;
 const TREND_MARGIN: number = 0.08;
@@ -20,7 +18,6 @@ export class GuidanceCoach {
   private readonly services: FeatureServices;
   private readonly texts: CoachTexts;
   private readonly holdMs: number;
-  private readonly haptics: Haptics = new Haptics();
   private pulseTimer: number = -1;
   private pulsePeriod: number = 0;
   private lastCloseness: number = 0;
@@ -45,7 +42,7 @@ export class GuidanceCoach {
 
   stop(): void {
     this.setPulse(0);
-    this.haptics.stop();
+    haptics.stop();
   }
 
   update(guidance: Guidance | undefined, now: number): void {
@@ -80,7 +77,7 @@ export class GuidanceCoach {
       this.setPulse(0);
       if (!this.arrivedAnnounced) {
         this.arrivedAnnounced = true;
-        this.haptics.pulse(ARRIVED_VIBRATION_MS);
+        haptics.arrived();
         this.services.narrator.announce(Messages.arrived(this.texts.name), Priority.URGENT);
         this.lastSpeechAt = now;
       }
@@ -117,7 +114,7 @@ export class GuidanceCoach {
     }
     this.pulsePeriod = periodMs;
     if (periodMs > 0) {
-      this.pulseTimer = setInterval(() => this.haptics.pulse(PULSE_DURATION_MS), periodMs);
+      this.pulseTimer = setInterval(() => haptics.guidancePulse(), periodMs);
     }
   }
 }

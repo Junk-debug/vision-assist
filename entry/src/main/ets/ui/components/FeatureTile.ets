@@ -1,4 +1,5 @@
 import { ElementIds } from '../../accessibility/ElementIds';
+import { haptics } from '../../haptics/Haptics';
 import { FeatureInfo } from '../FeatureCatalog';
 import { FontSize, IconSize, Motion, Palette, Radius, Sizes, Spacing } from '../theme/Theme';
 
@@ -90,6 +91,7 @@ export struct FeatureTile {
       })
       .onClick(() => {
         if (this.info !== undefined) {
+          haptics.tap();
           this.onOpen(this.info.id);
         }
       })

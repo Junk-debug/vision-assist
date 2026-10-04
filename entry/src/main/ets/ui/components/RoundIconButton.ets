@@ -1,3 +1,4 @@
+import { haptics } from '../../haptics/Haptics';
 import { IconSize, Motion, Palette, Sizes } from '../theme/Theme';
 
 @Component
@@ -37,6 +38,7 @@ export struct RoundIconButton {
       }
     })
     .onClick(() => {
+      haptics.tap();
       this.onTap();
     })
   }

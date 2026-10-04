@@ -54,10 +54,10 @@ export class ColorFeature implements Feature {
       }
       const name = nameColor(red / count, green / count, blue / count);
       this.services.overlay.drawCenterMarker(content, MARKER_COLOR);
-      this.services.report(name);
+      this.services.reportResult(name);
     } catch (error) {
       log(`color check failed ${describeError(error)}`);
-      this.services.report(Messages.COLOR_FAILED);
+      this.services.reportFailure(Messages.COLOR_FAILED);
     }
   }
 

@@ -46,7 +46,11 @@ export class DescribeFeature implements Feature, PhotoAnalyzer {
     this.services.overlay.drawDetections(result.detections, content);
     this.services.setTiming(this.timings(result));
     const sentence = describeScene(result.detections);
-    this.services.report(sentence === '' ? Messages.NOTHING_IN_PHOTO : sentence);
+    if (sentence === '') {
+      this.services.reportFailure(Messages.NOTHING_IN_PHOTO);
+    } else {
+      this.services.reportResult(sentence);
+    }
   }
 
   private async process(frame: image.PixelMap): Promise<void> {
@@ -63,6 +67,7 @@ export class DescribeFeature implements Feature, PhotoAnalyzer {
     const sentence = this.tracker.update(result.detections, Date.now());
     if (sentence !== undefined) {
       this.services.setStatus(sentence);
+      this.services.resultReady();
       this.services.narrator.announce(sentence, Priority.BACKGROUND);
     } else if (result.detections.length === 0) {
       this.services.setStatus(Messages.NOTHING_RECOGNISED);

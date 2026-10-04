@@ -90,7 +90,7 @@ A single phone camera cannot measure absolute distance, so guidance uses two ima
 - centre score: 1 minus the distance of the box centre from the frame centre, scaled to 0..1;
 - size score: the square root of the box area relative to a "full size" side (0.5 of the frame for objects, 0.25 for words).
 
-`closeness = 0.55 * centre + 0.45 * size`. The vibration period goes from 1000 ms (far) to 110 ms (close) on a curve. "Arrived" means closeness at least 0.8 and size score at least 0.6, which gives one long 600 ms vibration and "Bottle is right in front of you". Direction hints ("turn left", "tilt up", "move closer") use a dead zone of 15 % around the centre. `GuidanceCoach` says "Warmer" or "Colder" when closeness changes by more than 0.08 and speaks at most every 3 s. For words the last guidance is held for 1.5 s, so the pulse continues between OCR runs.
+`closeness = 0.55 * centre + 0.45 * size`. The vibration period goes from 1000 ms (far) to 110 ms (close) on a curve. "Arrived" means closeness at least 0.8 and size score at least 0.6, which gives the "arrived" cue (a strong triple pulse, see `haptics/HapticPatterns.ets`) and "Bottle is right in front of you". Direction hints ("turn left", "tilt up", "move closer") use a dead zone of 15 % around the centre. `GuidanceCoach` says "Warmer" or "Colder" when closeness changes by more than 0.08 and speaks at most every 3 s. For words the last guidance is held for 1.5 s, so the pulse continues between OCR runs.
 
 ## Text recognition providers
 
@@ -130,7 +130,7 @@ Rebuild steps for the detector are in `tools/model/README.md`.
 | Core Vision Kit | System text recognition, preferred when available |
 | Core Speech Kit | Offline text-to-speech; tries the `en-US` voice first and falls back to `zh-CN` |
 | Accessibility Kit | Detects whether the screen reader is on and sends `announceForAccessibility` events instead of using TTS, so speech does not compete with the screen reader |
-| Sensor Service Kit | Vibrator for the warmer/colder pulse; ambient light sensor for the light check |
+| Sensor Service Kit | Vibrator for the warmer/colder pulse (usage `notification`, not muted by touch feedback off) and short tap, result and error cues (usage `touch`); ambient light sensor for the light check |
 | ArkUI accessibility attributes | `accessibilityText`, `accessibilityDescription`, `accessibilityRole`, `accessibilityGroup`, `accessibilityLevel` on every control |
 
 ## Privacy

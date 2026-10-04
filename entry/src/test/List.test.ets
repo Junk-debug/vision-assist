@@ -7,6 +7,7 @@ import messagesTest from './Messages.test';
 import textSummaryTest from './TextSummary.test';
 import photoMathTest from './PhotoMath.test';
 import accessibilityTest from './Accessibility.test';
+import hapticsTest from './Haptics.test';
 
 export default function testsuite() {
   localUnitTest();
@@ -18,4 +19,5 @@ export default function testsuite() {
   textSummaryTest();
   photoMathTest();
   accessibilityTest();
+  hapticsTest();
 }

@@ -31,7 +31,7 @@ export class ReadFeature implements Feature, PhotoAnalyzer {
     this.services.setResultText('');
     this.services.setStatus(Messages.READING_TEXT);
     if (!this.services.textReader.isAvailable()) {
-      this.services.report(Messages.TEXT_READER_UNAVAILABLE);
+      this.services.reportFailure(Messages.TEXT_READER_UNAVAILABLE);
       return;
     }
     try {
@@ -40,7 +40,7 @@ export class ReadFeature implements Feature, PhotoAnalyzer {
         const content = await normalizeFrame(frame, this.services.camera.frameRotation());
         const result = await this.services.textReader.read(frame);
         if (result === undefined) {
-          this.services.report(Messages.TEXT_READ_FAILED);
+          this.services.reportFailure(Messages.TEXT_READ_FAILED);
           return;
         }
         this.show(result, content, Messages.NO_TEXT_FOUND);
@@ -49,7 +49,7 @@ export class ReadFeature implements Feature, PhotoAnalyzer {
       }
     } catch (error) {
       log(`reading failed ${describeError(error)}`);
-      this.services.report(Messages.TEXT_READ_FAILED);
+      this.services.reportFailure(Messages.TEXT_READ_FAILED);
     }
   }
 
@@ -61,12 +61,12 @@ export class ReadFeature implements Feature, PhotoAnalyzer {
     this.services.setResultText('');
     this.services.setStatus(Messages.ANALYSING_PHOTO);
     if (!this.services.textReader.isAvailable()) {
-      this.services.report(Messages.TEXT_READER_UNAVAILABLE);
+      this.services.reportFailure(Messages.TEXT_READER_UNAVAILABLE);
       return;
     }
     const result = await this.services.textReader.read(photo);
     if (result === undefined) {
-      this.services.report(Messages.TEXT_READ_FAILED);
+      this.services.reportFailure(Messages.TEXT_READ_FAILED);
       return;
     }
     this.show(result, content, Messages.NO_TEXT_IN_PHOTO);
@@ -75,13 +75,14 @@ export class ReadFeature implements Feature, PhotoAnalyzer {
   private show(result: TextReadResult, content: ContentRect, emptyMessage: string): void {
     const text = result.text.trim();
     if (text.length === 0) {
-      this.services.report(emptyMessage);
+      this.services.reportFailure(emptyMessage);
       return;
     }
     this.services.overlay.drawTextLines(result.lines, content);
     this.services.setTiming(Messages.ocrTiming(result.engine, result.elapsedMs));
     this.services.setResultText(text);
     this.services.setStatus(summarizeText(text));
+    this.services.resultReady();
     this.services.narrator.announce(text.length > MAX_SPOKEN_CHARS ? text.substring(0, MAX_SPOKEN_CHARS) : text);
   }
 }

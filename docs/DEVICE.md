@@ -56,6 +56,6 @@ These could not be verified on the emulator:
 | Frame rotation | Start "Describe surroundings": boxes must sit on the objects | Change the rotation per camera position in `entry/src/main/ets/common/Config.ets` (usually 90 for the back camera, 270 for the front) |
 | Front camera | Switch camera, boxes still on objects | Same setting, plus mirroring for the front camera |
 | System OCR | "Read text" status line shows the engine; on a phone it should be `system` | If it says `on-device`, Core Vision OCR is not available and the fallback is used |
-| Vibration | "Find an object", target "Person", point at someone | Check that vibration is on in the phone's sound and vibration settings |
+| Vibration | "Find an object", target "Person", point at someone | Guidance must still vibrate with touch feedback off (usage `notification`); it stops only in silent mode. Button taps, results and errors give short cues only while touch feedback is on |
 | English voice | Any feature that speaks | The `en-US` voice may need a download over the network the first time; until then the app uses the Chinese voice |
 | Screen reader | Settings, Accessibility, ScreenReader, then navigate with swipes and double tap | Report which element is read wrongly |

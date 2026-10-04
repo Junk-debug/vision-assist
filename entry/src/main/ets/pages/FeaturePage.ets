@@ -8,6 +8,7 @@ import { describeError, log } from '../common/Logger';
 import { Messages } from '../common/Messages';
 import { FeatureServices } from '../features/Feature';
 import { createFeature, FeatureBinding } from '../features/FeatureFactory';
+import { haptics } from '../haptics/Haptics';
 import { analyzePhotoUri } from '../photo/PhotoAnalysis';
 import { pickPhoto } from '../photo/PhotoPicker';
 import { Priority } from '../speech/Narrator';
@@ -99,6 +100,11 @@ export struct FeaturePage {
     appServices.narrator.announce(message, priority);
   }
 
+  private reportFailure(message: string, priority: Priority = Priority.RESULT): void {
+    haptics.error();
+    this.report(message, priority);
+  }
+
   private onSurface(surfaceId: string): void {
     this.surfaceId = surfaceId;
     this.openCamera();
@@ -113,19 +119,19 @@ export struct FeaturePage {
     if (!await appServices.ensureCameraPermission(context)) {
       this.cameraOpen = false;
       this.permissionDenied = true;
-      this.report(Messages.CAMERA_PERMISSION_NEEDED, Priority.URGENT);
+      this.reportFailure(Messages.CAMERA_PERMISSION_NEEDED, Priority.URGENT);
       return;
     }
     this.permissionDenied = false;
     await appServices.init(context);
     if (!await appServices.camera.start(context, this.surfaceId)) {
       this.cameraOpen = false;
-      this.report(Messages.CAMERA_START_FAILED, Priority.URGENT);
+      this.reportFailure(Messages.CAMERA_START_FAILED, Priority.URGENT);
       return;
     }
     this.syncCamera();
     if (this.info.needsDetector && !appServices.detector.isReady()) {
-      this.report(Messages.MODEL_LOAD_FAILED, Priority.URGENT);
+      this.reportFailure(Messages.MODEL_LOAD_FAILED, Priority.URGENT);
       return;
     }
     if (this.continuous()) {
@@ -212,7 +218,7 @@ export struct FeaturePage {
       await this.openCamera();
       return;
     }
-    this.report(Messages.CAMERA_PERMISSION_NEEDED);
+    this.reportFailure(Messages.CAMERA_PERMISSION_NEEDED);
   }
 
   private openSheet(openerId: string): void {
@@ -239,7 +245,7 @@ export struct FeaturePage {
       return;
     }
     if (this.info.picker === PickerKind.WORD && !appServices.textReader.isAvailable()) {
-      this.report(Messages.TEXT_READER_UNAVAILABLE, Priority.URGENT);
+      this.reportFailure(Messages.TEXT_READER_UNAVAILABLE, Priority.URGENT);
       return;
     }
     this.binding?.setTarget(trimmed);
@@ -266,7 +272,7 @@ export struct FeaturePage {
       uri = await pickPhoto();
     } catch (error) {
       log(`photo picker failed ${describeError(error)}`);
-      this.report(Messages.PICKER_OPEN_FAILED);
+      this.reportFailure(Messages.PICKER_OPEN_FAILED);
       return;
     }
     appServices.narrator.screenReader.focus(ElementIds.FEATURE_PHOTO, FOCUS_AFTER_TRANSITION_MS);
@@ -289,7 +295,7 @@ export struct FeaturePage {
     const analysed = await analyzePhotoUri(uri, analyzer);
     this.busy = false;
     if (!analysed) {
-      this.report(Messages.PHOTO_OPEN_FAILED);
+      this.reportFailure(Messages.PHOTO_OPEN_FAILED);
       return;
     }
     if (this.resultText !== '') {
@@ -322,6 +328,9 @@ export struct FeaturePage {
     const switched = await appServices.camera.switchPosition(this.ctx(), this.surfaceId);
     this.syncCamera();
     this.switching = false;
+    if (!switched) {
+      haptics.error();
+    }
     appServices.narrator.announce(switched ? (this.front ? Messages.FRONT_CAMERA_ON : Messages.BACK_CAMERA_ON) :
       Messages.CAMERA_SWITCH_FAILED);
   }

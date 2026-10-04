@@ -16,8 +16,8 @@
 - [x] Full text result screen: scrollable full OCR text and a "Read again" button (status card cuts at 4 lines)
 - [x] Pick a photo from the gallery as input (Describe and Read text)
 - [x] One catalogue of failure sentences, each says what happened and what to do next, with tests
-- [ ] Short haptic feedback on button press and when a result is ready
-- [ ] Vibration usage type that is not muted by "touch feedback off"
+- [x] Short haptic feedback on button press and when a result is ready
+- [x] Vibration usage type that is not muted by "touch feedback off"
 
 ## Testing
 

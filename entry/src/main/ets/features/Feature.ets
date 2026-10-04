@@ -1,5 +1,6 @@
 import { image } from '@kit.ImageKit';
 import { CameraSource } from '../camera/CameraSource';
+import { haptics } from '../haptics/Haptics';
 import { Narrator } from '../speech/Narrator';
 import { Overlay } from '../ui/Overlay';
 import { ContentRect } from '../vision/DetectionTypes';
@@ -45,5 +46,19 @@ export class FeatureServices {
   report(message: string): void {
     this.setStatus(message);
     this.narrator.announce(message);
+  }
+
+  reportResult(message: string): void {
+    haptics.resultReady();
+    this.report(message);
+  }
+
+  reportFailure(message: string): void {
+    haptics.error();
+    this.report(message);
+  }
+
+  resultReady(): void {
+    haptics.resultReady();
   }
 }
