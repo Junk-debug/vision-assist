@@ -76,7 +76,8 @@ export class Overlay {
     return ((content.top + value * content.height - this.visibleTop) / this.visibleHeight) * this.height;
   }
 
-  drawDetections(detections: Detection[], content: ContentRect, highlightLabel: string = ''): void {
+  drawDetections(detections: Detection[], content: ContentRect, highlightLabel: string = '',
+    colorOf: (detection: Detection) => string = (): string => ''): void {
     this.clear();
     this.canvas.font = LABEL_FONT;
     const isTarget = (detection: Detection): boolean => highlightLabel !== '' && detection.label === highlightLabel;
@@ -93,7 +94,8 @@ export class Overlay {
       this.canvas.lineWidth = highlighted ? Sizes.overlayTargetStroke : Sizes.overlayStroke;
       this.canvas.strokeStyle = color;
       this.canvas.strokeRect(x, y, boxW, boxH);
-      const caption = `${detection.label} ${Math.round(detection.score * 100)}%`;
+      const tint = colorOf(detection);
+      const caption = `${tint === '' ? '' : tint + ' '}${detection.label} ${Math.round(detection.score * 100)}%`;
       const captionW = this.canvas.measureText(caption).width + LABEL_PADDING * 2;
       const captionX = Math.max(0, Math.min(x, this.width - captionW));
       const captionY = this.captionTop(captionX, captionW, [y - LABEL_HEIGHT - 2, y + 2, y + boxH + 2], placed);

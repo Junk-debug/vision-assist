@@ -160,12 +160,12 @@ export class LiveSceneTracker {
     this.lastSpeechAt = Number.NEGATIVE_INFINITY;
   }
 
-  update(detections: Detection[], now: number): string | undefined {
+  update(detections: Detection[], now: number, colorOf: ColorOf = NO_COLOR): string | undefined {
     this.observe(groupScene(detections));
     if (now - this.lastSpeechAt < this.config.speechGapMs) {
       return undefined;
     }
-    const sentence = this.nextChange();
+    const sentence = this.nextChange(colorOf);
     if (sentence !== undefined) {
       this.lastSpeechAt = now;
     }
@@ -203,7 +203,7 @@ export class LiveSceneTracker {
     }
   }
 
-  private nextChange(): string | undefined {
+  private nextChange(colorOf: ColorOf): string | undefined {
     const added: SceneGroup[] = [];
     this.tracks.forEach((track: Track, label: string) => {
       if (track.confirmed && track.absent === 0 && !this.announced.includes(label)) {
@@ -217,7 +217,7 @@ export class LiveSceneTracker {
       for (const group of fresh) {
         this.announced.push(group.label);
       }
-      return Messages.sceneNew(fresh.map((group: SceneGroup) => phraseOf(group)));
+      return Messages.sceneNew(fresh.map((group: SceneGroup) => phraseOf(group, colorOf)));
     }
     const gone = this.announced.filter((label: string) => !this.tracks.has(label));
     if (gone.length > 0) {

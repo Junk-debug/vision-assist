@@ -35,9 +35,9 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
       try {
         const content = await normalizeFrame(frame, this.services.camera.frameRotation());
         const result = await this.services.detector.detect(frame, DETECTION_THRESHOLD);
-        this.services.overlay.drawDetections(result.detections, content);
-        this.services.setTiming(this.timings(result));
         const colorOf = await colorResolverFor(frame);
+        this.services.overlay.drawDetections(result.detections, content, '', colorOf);
+        this.services.setTiming(this.timings(result));
         this.announce(describeScene(result.detections, colorOf), Messages.NOTHING_TO_DESCRIBE);
       } finally {
         frame.release();
@@ -76,9 +76,9 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
     this.services.overlay.clear();
     this.services.setStatus(Messages.ANALYSING_PHOTO);
     const result = await this.services.detector.detect(photo, DETECTION_THRESHOLD);
-    this.services.overlay.drawDetections(result.detections, content);
-    this.services.setTiming(this.timings(result));
     const colorOf = await colorResolverFor(photo);
+    this.services.overlay.drawDetections(result.detections, content, '', colorOf);
+    this.services.setTiming(this.timings(result));
     this.announce(describeScene(result.detections, colorOf), Messages.NOTHING_IN_PHOTO);
   }
 
@@ -99,9 +99,10 @@ export class DescribeFeature implements Feature, PhotoAnalyzer, LiveMode {
     if (!this.live) {
       return;
     }
-    this.services.overlay.drawDetections(result.detections, content);
+    const colorOf = await colorResolverFor(frame);
+    this.services.overlay.drawDetections(result.detections, content, '', colorOf);
     this.services.setTiming(this.timings(result));
-    const sentence = this.tracker.update(result.detections, Date.now());
+    const sentence = this.tracker.update(result.detections, Date.now(), colorOf);
     if (sentence !== undefined) {
       this.services.setStatus(sentence);
       this.services.resultReady();
