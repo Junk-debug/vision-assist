@@ -89,6 +89,15 @@ export class Messages {
   static readonly FULL_TEXT_TITLE: string = 'Full text';
   static readonly READ_AGAIN: string = 'Read again';
   static readonly READ_AGAIN_HINT: string = 'Reads the whole text aloud from the start';
+  static readonly STOP_READING: string = 'Stop reading';
+  static readonly STOP_READING_HINT: string = 'Stops reading the text aloud';
+  static readonly READING_STOPPED: string = 'Reading stopped.';
+  static readonly SNAPSHOT: string = 'Snapshot';
+  static readonly READ_NEW_TEXT: string = 'Read new text';
+  static readonly READ_NEW_TEXT_HINT: string = 'Takes a new snapshot from the camera and reads it';
+  static readonly SNAPSHOT_BACK: string = 'Back to camera';
+  static readonly SNAPSHOT_BACK_HINT: string = 'Closes the snapshot and shows the live camera again';
+  static readonly SNAPSHOT_READ_AGAIN_HINT: string = 'Reads the text of this snapshot aloud again';
 
   static readonly USE_PHOTO: string = 'Use a photo instead';
   static readonly USE_ANOTHER_PHOTO: string = 'Use another photo';
@@ -222,6 +231,17 @@ export class Messages {
       return `It is bright. About ${rounded} lux.`;
     }
     return `It is very bright, probably daylight. About ${rounded} lux.`;
+  }
+
+  static probablyColour(name: string): string {
+    return `probably ${name}`;
+  }
+
+  static mixedColours(first: string, second: string): string {
+    if (first === '') {
+      return 'mixed colours';
+    }
+    return second === '' ? `mixed colours, mostly ${first}` : `mixed colours, mostly ${first} and ${second}`;
   }
 
   static textSummary(lineCount: number, firstLine: string): string {

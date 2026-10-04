@@ -35,6 +35,9 @@ export class FeatureServices {
   readonly setStatus: (text: string) => void;
   readonly setTiming: (text: string) => void;
   readonly setResultText: (text: string) => void;
+  private snapshotSink: (frame: image.PixelMap) => void = (frame: image.PixelMap) => {
+    frame.release();
+  };
 
   constructor(camera: FrameSource, detector: YoloDetector, narrator: Narrator, overlay: Overlay,
     textReader: TextReader, setStatus: (text: string) => void, setTiming: (text: string) => void,
@@ -47,6 +50,14 @@ export class FeatureServices {
     this.setStatus = setStatus;
     this.setTiming = setTiming;
     this.setResultText = setResultText;
+  }
+
+  setSnapshotSink(sink: (frame: image.PixelMap) => void): void {
+    this.snapshotSink = sink;
+  }
+
+  showSnapshot(frame: image.PixelMap): void {
+    this.snapshotSink(frame);
   }
 
   report(message: string): void {

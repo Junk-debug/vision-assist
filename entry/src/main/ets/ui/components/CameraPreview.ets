@@ -1,6 +1,6 @@
 import { image } from '@kit.ImageKit';
 import { Overlay } from '../Overlay';
-import { Palette, Radius } from '../theme/Theme';
+import { FontSize, Palette, Radius, Spacing } from '../theme/Theme';
 
 const SURFACE_ASPECT: number = 9 / 16;
 
@@ -10,6 +10,8 @@ export struct CameraPreview {
   sceneOverlay?: Overlay;
   @Prop photoUri: string = '';
   @Prop injectedFrame: image.PixelMap | undefined = undefined;
+  @Prop snapshot: image.PixelMap | undefined = undefined;
+  @Prop badge: string = '';
   onSurface: (surfaceId: string) => void = (surfaceId: string) => {};
   private xController: XComponentController = new XComponentController();
 
@@ -48,6 +50,14 @@ export struct CameraPreview {
             .accessibilityLevel('no')
         }
       }
+      if (this.snapshot !== undefined) {
+        Image(this.snapshot)
+          .objectFit(ImageFit.Contain)
+          .width('100%')
+          .height('100%')
+          .backgroundColor(Palette.previewBackground)
+          .accessibilityLevel('no')
+      }
       Canvas(this.canvas)
         .width('100%')
         .height('100%')
@@ -55,6 +65,17 @@ export struct CameraPreview {
         .onAreaChange((oldArea: Area, newArea: Area) => {
           this.sceneOverlay?.setSize(Number(newArea.width), Number(newArea.height));
         })
+      if (this.badge !== '') {
+        Text(this.badge)
+          .fontSize(FontSize.caption)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(Palette.onPrimary)
+          .backgroundColor(Palette.scrim)
+          .borderRadius(Radius.chip)
+          .padding({ left: Spacing.sm, right: Spacing.sm, top: Spacing.xs, bottom: Spacing.xs })
+          .position({ x: Spacing.sm, y: Spacing.sm })
+          .accessibilityLevel('no')
+      }
     }
     .width('100%')
     .aspectRatio(1)

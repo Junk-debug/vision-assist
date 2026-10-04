@@ -13,6 +13,8 @@ import { haptics } from '../haptics/Haptics';
 import { analyzePhotoUri } from '../photo/PhotoAnalysis';
 import { pickPhoto } from '../photo/PhotoPicker';
 import { Priority } from '../speech/Narrator';
+import { ReadingListener } from '../speech/ReadAloud';
+import { splitIntoChunks } from '../speech/TextChunks';
 import { FEATURE_CATALOG, FeatureInfo, findFeatureInfo, PickerKind } from '../ui/FeatureCatalog';
 import { Overlay } from '../ui/Overlay';
 import { BigButton, ButtonTone } from '../ui/components/BigButton';
@@ -21,7 +23,10 @@ import { RoundIconButton } from '../ui/components/RoundIconButton';
 import { ScreenFrame } from '../ui/components/ScreenFrame';
 import { StatusCard } from '../ui/components/StatusCard';
 import { TargetSheet } from '../ui/components/TargetSheet';
-import { Palette, Spacing } from '../ui/theme/Theme';
+import { FontSize, Palette, Radius, Sizes, Spacing } from '../ui/theme/Theme';
+
+const TEXT_PREVIEW_WIDTH: string = '55%';
+const TEXT_PANEL_MIN_HEIGHT: number = 96;
 
 @Component
 export struct FeaturePage {
@@ -39,6 +44,8 @@ export struct FeaturePage {
   @State sheetShown: boolean = false;
   @State permissionDenied: boolean = false;
   @State injectedFrame: image.PixelMap | undefined = undefined;
+  @State snapshot: image.PixelMap | undefined = undefined;
+  @State readingIndex: number = -1;
   private info: FeatureInfo = FEATURE_CATALOG[0];
   private canvas: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true));
   private sceneOverlay: Overlay = new Overlay(this.canvas);
@@ -53,6 +60,9 @@ export struct FeaturePage {
   private resumeAfterSheet: boolean = false;
   private pickedInSheet: boolean = false;
   private returnFocusId: string = '';
+  private readingListener: ReadingListener = (index: number) => {
+    this.readingIndex = index;
+  };
 
   private ctx(): common.UIAbilityContext {
     return this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -68,7 +78,11 @@ export struct FeaturePage {
       }, (text: string) => {
         this.resultText = text;
       });
+    services.setSnapshotSink((frame: image.PixelMap) => {
+      this.showSnapshot(frame);
+    });
     this.binding = createFeature(this.info.id, services);
+    appServices.narrator.reader.addListener(this.readingListener);
     this.sceneOverlay.setStyle(this.info.accent, false);
     this.status = this.needsTarget() ? this.info.targetPrompt : Messages.STARTING_CAMERA;
     appServices.narrator.announceScreen(this.needsTarget() ? Messages.screenWithPrompt(this.info.name, this.info.targetPrompt) :
@@ -76,6 +90,9 @@ export struct FeaturePage {
   }
 
   aboutToDisappear(): void {
+    appServices.narrator.reader.removeListener(this.readingListener);
+    appServices.narrator.stopReading();
+    this.releaseSnapshot();
     this.stopFeature();
     this.closeCamera();
     appServices.camera.setPreviewListener(undefined);
@@ -111,6 +128,46 @@ export struct FeaturePage {
   private reportFailure(message: string, priority: Priority = Priority.RESULT): void {
     haptics.error();
     this.report(message, priority);
+  }
+
+  private reading(): boolean {
+    return this.readingIndex >= 0;
+  }
+
+  private showSnapshot(frame: image.PixelMap): void {
+    this.releaseSnapshot();
+    this.snapshot = frame;
+    this.sceneOverlay.clear();
+    this.sceneOverlay.useFullViewport();
+    this.sceneOverlay.setStyle(this.info.accent, false);
+  }
+
+  private releaseSnapshot(): void {
+    const old = this.snapshot;
+    this.snapshot = undefined;
+    old?.release();
+  }
+
+  private closeSnapshot(): void {
+    appServices.narrator.stopReading();
+    this.releaseSnapshot();
+    this.sceneOverlay.clear();
+    this.resultText = '';
+    this.detail = '';
+    this.syncCamera();
+    this.status = this.info.readyText;
+    appServices.narrator.screenReader.focus(ElementIds.FEATURE_PRIMARY, FOCUS_AFTER_TRANSITION_MS);
+  }
+
+  private stopReading(): void {
+    appServices.narrator.stopReading();
+    appServices.narrator.announce(Messages.READING_STOPPED, Priority.URGENT);
+  }
+
+  private readAgain(): void {
+    if (this.resultText !== '') {
+      appServices.narrator.readText(this.resultText);
+    }
   }
 
   private onSurface(surfaceId: string): void {
@@ -199,6 +256,10 @@ export struct FeaturePage {
     }
     if (this.needsTarget()) {
       this.openSheet(ElementIds.FEATURE_PRIMARY);
+      return;
+    }
+    if (this.reading()) {
+      this.stopReading();
       return;
     }
     if (this.photoMode()) {
@@ -319,6 +380,7 @@ export struct FeaturePage {
     }
     const wasRunning = this.running;
     this.stopFeature();
+    appServices.narrator.stopReading();
     let uri = '';
     try {
       uri = await pickPhoto();
@@ -336,6 +398,7 @@ export struct FeaturePage {
       return;
     }
     this.closeCamera();
+    this.releaseSnapshot();
     this.resultText = '';
     this.detail = '';
     this.sceneOverlay.clear();
@@ -356,6 +419,7 @@ export struct FeaturePage {
   }
 
   private backToCamera(): void {
+    appServices.narrator.stopReading();
     this.sceneOverlay.clear();
     this.sceneOverlay.useCameraViewport();
     this.resultText = '';
@@ -366,6 +430,9 @@ export struct FeaturePage {
   }
 
   private openFullText(spoken: boolean): void {
+    if (!spoken) {
+      appServices.narrator.stopReading();
+    }
     const params: FullTextParams = { text: this.resultText, spoken: spoken };
     this.returnFocusId = ElementIds.FEATURE_FULL_TEXT;
     this.pathStack?.pushPathByName(Routes.FULL_TEXT, params);
@@ -398,8 +465,14 @@ export struct FeaturePage {
     if (this.needsTarget()) {
       return this.info.chooseTargetLabel;
     }
+    if (this.reading()) {
+      return Messages.STOP_READING;
+    }
     if (this.photoMode()) {
       return Messages.BACK_TO_CAMERA;
+    }
+    if (this.snapshot !== undefined && !this.busy) {
+      return Messages.READ_NEW_TEXT;
     }
     if (this.continuous()) {
       return this.running ? this.info.stopLabel : this.info.startLabel;
@@ -414,8 +487,14 @@ export struct FeaturePage {
     if (this.needsTarget()) {
       return this.info.targetPrompt;
     }
+    if (this.reading()) {
+      return Messages.STOP_READING_HINT;
+    }
     if (this.photoMode()) {
       return Messages.BACK_TO_CAMERA_HINT;
+    }
+    if (this.snapshot !== undefined) {
+      return Messages.READ_NEW_TEXT_HINT;
     }
     return Messages.targetHint(this.info.actionHint, this.target);
   }
@@ -424,6 +503,12 @@ export struct FeaturePage {
     const chain: string[] = [ElementIds.FEATURE_TITLE, ElementIds.FEATURE_STATUS, ElementIds.FEATURE_PRIMARY];
     if (this.showLive()) {
       chain.push(ElementIds.FEATURE_LIVE);
+    }
+    if (this.snapshot !== undefined && this.resultText !== '') {
+      chain.push(ElementIds.SNAPSHOT_READ_AGAIN);
+    }
+    if (this.snapshot !== undefined) {
+      chain.push(ElementIds.SNAPSHOT_BACK);
     }
     if (this.resultText !== '') {
       chain.push(ElementIds.FEATURE_FULL_TEXT);
@@ -465,15 +550,20 @@ export struct FeaturePage {
     Column({ space: Spacing.md }) {
       Column({ space: Spacing.md }) {
         if (!this.needsTarget()) {
-          CameraPreview({
-            canvas: this.canvas,
-            sceneOverlay: this.sceneOverlay,
-            photoUri: this.photoUri,
-            injectedFrame: this.injectedFrame,
-            onSurface: (surfaceId: string) => {
-              this.onSurface(surfaceId);
-            }
-          })
+          Column() {
+            CameraPreview({
+              canvas: this.canvas,
+              sceneOverlay: this.sceneOverlay,
+              photoUri: this.photoUri,
+              injectedFrame: this.injectedFrame,
+              snapshot: this.snapshot,
+              badge: this.snapshot !== undefined ? Messages.SNAPSHOT : '',
+              onSurface: (surfaceId: string) => {
+                this.onSurface(surfaceId);
+              }
+            })
+          }
+          .width(this.resultText !== '' ? TEXT_PREVIEW_WIDTH : '100%')
           .flexShrink(1)
         }
         StatusCard({
@@ -482,6 +572,9 @@ export struct FeaturePage {
           elementId: ElementIds.FEATURE_STATUS,
           nextFocusId: this.nextOf(ElementIds.FEATURE_STATUS)
         })
+        if (this.resultText !== '') {
+          this.textPanel()
+        }
       }
       .layoutWeight(1)
       .width('100%')
@@ -489,7 +582,7 @@ export struct FeaturePage {
       BigButton({
         label: this.primaryLabel(),
         hint: this.primaryHint(),
-        tone: this.running ? ButtonTone.STOP : ButtonTone.PRIMARY,
+        tone: this.running || this.reading() ? ButtonTone.STOP : ButtonTone.PRIMARY,
         elementId: ElementIds.FEATURE_PRIMARY,
         nextFocusId: this.nextOf(ElementIds.FEATURE_PRIMARY),
         onTap: () => {
@@ -507,6 +600,35 @@ export struct FeaturePage {
             this.toggleLive();
           }
         })
+      }
+      if (this.snapshot !== undefined) {
+        Row({ space: Spacing.md }) {
+          if (this.resultText !== '') {
+            BigButton({
+              label: Messages.READ_AGAIN,
+              hint: Messages.SNAPSHOT_READ_AGAIN_HINT,
+              tone: ButtonTone.SECONDARY,
+              elementId: ElementIds.SNAPSHOT_READ_AGAIN,
+              nextFocusId: this.nextOf(ElementIds.SNAPSHOT_READ_AGAIN),
+              onTap: () => {
+                this.readAgain();
+              }
+            })
+            .layoutWeight(1)
+          }
+          BigButton({
+            label: Messages.SNAPSHOT_BACK,
+            hint: Messages.SNAPSHOT_BACK_HINT,
+            tone: ButtonTone.SECONDARY,
+            elementId: ElementIds.SNAPSHOT_BACK,
+            nextFocusId: this.nextOf(ElementIds.SNAPSHOT_BACK),
+            onTap: () => {
+              this.closeSnapshot();
+            }
+          })
+          .layoutWeight(1)
+        }
+        .width('100%')
       }
       if (this.resultText !== '') {
         BigButton({
@@ -548,6 +670,34 @@ export struct FeaturePage {
     .layoutWeight(1)
     .width('100%')
     .padding({ left: Spacing.page, right: Spacing.page, bottom: Spacing.lg })
+  }
+
+  @Builder
+  textPanel() {
+    Scroll() {
+      Column({ space: Spacing.sm }) {
+        ForEach(splitIntoChunks(this.resultText), (chunk: string, index: number) => {
+          Text(chunk)
+            .fontSize(FontSize.subtitle)
+            .lineHeight(Sizes.fullTextLineHeight - Spacing.md)
+            .fontColor(Palette.textPrimary)
+            .width('100%')
+            .padding(Spacing.xs)
+            .borderRadius(Radius.chip)
+            .backgroundColor(index === this.readingIndex ? Palette.inputFill : Palette.card)
+        }, (chunk: string, index: number) => `${index}:${chunk}`)
+      }
+      .width('100%')
+      .padding(Spacing.md)
+    }
+    .layoutWeight(1)
+    .width('100%')
+    .constraintSize({ minHeight: TEXT_PANEL_MIN_HEIGHT })
+    .align(Alignment.Top)
+    .scrollBar(BarState.Auto)
+    .borderRadius(Radius.card)
+    .backgroundColor(Palette.card)
+    .accessibilityLevel('no-hide-descendants')
   }
 
   @Builder

@@ -12,6 +12,7 @@ import hapticsTest from './Haptics.test';
 import textEnginesTest from './TextEngines.test';
 import frameSourceTest from './FrameSource.test';
 import rotatedBoxTest from './RotatedBox.test';
+import readAloudTest from './ReadAloud.test';
 
 export default function testsuite() {
   localUnitTest();
@@ -28,4 +29,5 @@ export default function testsuite() {
   textEnginesTest();
   frameSourceTest();
   rotatedBoxTest();
+  readAloudTest();
 }

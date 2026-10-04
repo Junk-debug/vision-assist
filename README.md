@@ -12,12 +12,12 @@ Built for the HackYeah 2026 Huawei challenge "Imagine What's Next" (Human-Centri
 | Screen reader support | Heading-first focus order, polite announcements, modal pickers; checked through the accessibility tree, see [Accessibility](#accessibility) |
 | Front and back camera | Switch button on every feature screen; boxes land on the objects with both emulator cameras |
 | Find an object with "warmer / colder" vibration | Implemented, runs on the emulator; vibration not verified (the emulator vibrator reports "Device operation failed") |
-| Read printed text | Implemented with an on-device OCR fallback (Core Vision OCR does not run on the emulator) |
+| Read printed text | Implemented with an on-device OCR fallback (Core Vision OCR does not run on the emulator); reads a frozen snapshot, shows the text while speaking it in chunks, Stop reading at any time |
 | Find a word (typed or preset, spoken and haptic guidance) | Implemented; picker, typing and the OCR loop verified on the emulator, guidance on real printed text and vibration not verified |
 | Full text screen for Read text | Large, scrollable, selectable text, one screen reader stop per line, Read again |
 | Photo from the gallery (Describe, Read text) | System photo picker, no storage permission; the photo is decoded at most 2048 px on the long side |
 | Light check | Ambient light sensor, falling back to camera brightness when the sensor reads 0 lux in a bright scene (the emulator sensor always reports 0); verified on the emulator through the camera fallback |
-| Color check | Names the color in the middle of the frame (for example "brown", "light red"); verified on the emulator |
+| Color check | Names the color in the middle of the frame with white-balance correction from the rest of the frame (for example "blue", "probably beige", "mixed colours"); unit tested, not verified on a real phone |
 
 ## Screens
 

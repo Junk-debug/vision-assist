@@ -4,10 +4,9 @@ import { describeError, log } from '../common/Logger';
 import { Messages } from '../common/Messages';
 import { ContentRect } from '../vision/DetectionTypes';
 import { normalizeFrame } from '../vision/FrameNormalizer';
+import { containRect } from '../photo/PhotoMath';
 import { summarizeText } from '../vision/text/TextSummary';
 import { TextReadResult } from '../vision/text/TextTypes';
-
-const MAX_SPOKEN_CHARS: number = 1200;
 
 export class ReadFeature implements Feature, PhotoAnalyzer {
   readonly id: string = 'read';
@@ -36,8 +35,13 @@ export class ReadFeature implements Feature, PhotoAnalyzer {
     }
     try {
       const frame = await this.services.camera.nextFrame();
+      let shown = false;
       try {
-        const content = await normalizeFrame(frame, this.services.camera.frameRotation());
+        await normalizeFrame(frame, this.services.camera.frameRotation());
+        const info = await frame.getImageInfo();
+        const content = containRect(info.size.width, info.size.height);
+        this.services.showSnapshot(frame);
+        shown = true;
         const result = await this.services.textReader.read(frame);
         if (result === undefined) {
           this.services.reportFailure(Messages.TEXT_READ_FAILED);
@@ -45,7 +49,9 @@ export class ReadFeature implements Feature, PhotoAnalyzer {
         }
         this.show(result, content, Messages.NO_TEXT_FOUND);
       } finally {
-        frame.release();
+        if (!shown) {
+          frame.release();
+        }
       }
     } catch (error) {
       log(`reading failed ${describeError(error)}`);
@@ -83,6 +89,6 @@ export class ReadFeature implements Feature, PhotoAnalyzer {
     this.services.setResultText(text);
     this.services.setStatus(summarizeText(text));
     this.services.resultReady();
-    this.services.narrator.announce(text.length > MAX_SPOKEN_CHARS ? text.substring(0, MAX_SPOKEN_CHARS) : text);
+    this.services.narrator.readText(text);
   }
 }

@@ -3,7 +3,8 @@ import { appServices } from '../app/AppServices';
 import { FullTextParams } from '../app/Routes';
 import { Messages } from '../common/Messages';
 import { Priority } from '../speech/Narrator';
-import { BigButton } from '../ui/components/BigButton';
+import { ReadingListener } from '../speech/ReadAloud';
+import { BigButton, ButtonTone } from '../ui/components/BigButton';
 import { ScreenFrame } from '../ui/components/ScreenFrame';
 import { FontSize, Palette, Radius, Sizes, Spacing } from '../ui/theme/Theme';
 import { splitLines } from '../vision/text/TextSummary';
@@ -14,16 +15,23 @@ export struct FullTextPage {
   private lines: string[] = [];
   private text: string = '';
   private pathStack?: NavPathStack;
+  @State reading: boolean = false;
+  private readingListener: ReadingListener = (index: number) => {
+    this.reading = index >= 0;
+  };
 
   aboutToAppear(): void {
     this.text = this.params !== undefined ? this.params.text : '';
     this.lines = splitLines(this.text);
+    this.reading = appServices.narrator.isReading();
+    appServices.narrator.reader.addListener(this.readingListener);
     if (this.params === undefined || !this.params.spoken) {
       appServices.narrator.announceScreen(Messages.FULL_TEXT_TITLE);
     }
   }
 
   aboutToDisappear(): void {
+    appServices.narrator.reader.removeListener(this.readingListener);
     appServices.narrator.stopSpeaking();
   }
 
@@ -55,12 +63,18 @@ export struct FullTextPage {
       .scrollBar(BarState.Auto)
       .edgeEffect(EdgeEffect.Spring)
       BigButton({
-        label: Messages.READ_AGAIN,
-        hint: Messages.READ_AGAIN_HINT,
+        label: this.reading ? Messages.STOP_READING : Messages.READ_AGAIN,
+        hint: this.reading ? Messages.STOP_READING_HINT : Messages.READ_AGAIN_HINT,
+        tone: this.reading ? ButtonTone.STOP : ButtonTone.PRIMARY,
         elementId: ElementIds.FULL_TEXT_READ_AGAIN,
         nextFocusId: ElementIds.FULL_TEXT_BACK,
         onTap: () => {
-          appServices.narrator.announce(this.text, Priority.URGENT);
+          if (this.reading) {
+            appServices.narrator.stopReading();
+            appServices.narrator.announce(Messages.READING_STOPPED, Priority.URGENT);
+          } else {
+            appServices.narrator.readText(this.text);
+          }
         }
       })
     }
