@@ -1,0 +1,2 @@
+# ArkTS sources: GitHub Linguist does not recognize .ets, count them as TypeScript
+*.ets linguist-language=TypeScript
